@@ -102,14 +102,20 @@ def format_float(value: Any, suffix: str = "") -> str:
         return "-"
 
 
-def static_map_preview_url(lat: float | None, lon: float | None) -> str | None:
+def static_map_preview_urls(lat: float | None, lon: float | None) -> tuple[str, str] | None:
     if lat is None or lon is None:
         return None
-    return (
+    primary = (
+        "https://static-maps.yandex.ru/1.x/"
+        f"?ll={lon:.5f},{lat:.5f}&z=13&l=map&size=220,120"
+        f"&pt={lon:.5f},{lat:.5f},pm2rdm"
+    )
+    fallback = (
         "https://staticmap.openstreetmap.de/staticmap.php"
         f"?center={lat:.5f},{lon:.5f}&zoom=13&size=220x120"
         f"&markers={lat:.5f},{lon:.5f},red-pushpin"
     )
+    return primary, fallback
 
 
 def fetch_card_media(url: str) -> dict[str, str | None]:
@@ -202,10 +208,15 @@ def card_markup(row: dict[str, Any]) -> str:
         image = row.get("image_url") or "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&w=1200&q=80"
         lat = to_float(row.get("lat"))
         lon = to_float(row.get("lon"))
-        map_preview = static_map_preview_url(lat, lon)
+        map_preview_pair = static_map_preview_urls(lat, lon)
         map_thumb_html = ""
-        if map_preview:
-                map_thumb_html = f'<img class="mapThumb" src="{safe_text(map_preview)}" alt="Kort preview" loading="lazy" />'
+        if map_preview_pair:
+            primary_preview, fallback_preview = map_preview_pair
+            map_thumb_html = (
+                f'<img class="mapThumb" src="{safe_text(primary_preview)}" '
+                f'onerror="this.onerror=null;this.src=\'{safe_text(fallback_preview)}\';" '
+                'alt="Kort preview" loading="lazy" />'
+            )
 
         title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
         desc = row.get("card_description") or row.get("Kommentar") or ""
@@ -358,7 +369,9 @@ function activateView(view) {{
     if (!isCards) {{
         filtersBar.style.display = 'none';
         filterToggle.style.display = 'none';
+        modeToggle.style.display = 'none';
     }} else {{
+        modeToggle.style.display = 'inline-block';
         filterToggle.style.display = 'inline-block';
         filtersBar.style.display = filtersBar.classList.contains('collapsed') ? 'none' : 'flex';
     }}
