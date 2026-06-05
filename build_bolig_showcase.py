@@ -107,13 +107,13 @@ def static_map_preview_urls(lat: float | None, lon: float | None) -> tuple[str, 
         return None
     primary = (
         "https://staticmap.openstreetmap.de/staticmap.php"
-        f"?center={lat:.5f},{lon:.5f}&zoom=13&size=220x120"
+        f"?center={lat:.5f},{lon:.5f}&zoom=12&size=220x120"
         f"&markers={lat:.5f},{lon:.5f},red-pushpin"
     )
     fallback = (
         "https://maps.geoapify.com/v1/staticmap"
         "?style=osm-carto"
-        f"&width=220&height=120&center=lonlat:{lon:.5f},{lat:.5f}&zoom=13"
+        f"&width=220&height=120&center=lonlat:{lon:.5f},{lat:.5f}&zoom=12"
         f"&marker=lonlat:{lon:.5f},{lat:.5f};color:%23d64545;size:medium"
     )
     return primary, fallback
@@ -270,9 +270,9 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .grid {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }}
     .card {{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:0 10px 26px rgba(15,47,41,.12); }}
     .card.dog-friendly {{ border-color:#8fcea8; }}
-    .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; padding:10px; }}
+    .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
-    .rank,.distance {{ position:relative; z-index:1; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; }}
+    .rank,.distance {{ position:relative; z-index:1; align-self:flex-start; display:inline-flex; align-items:center; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; line-height:1.15; white-space:nowrap; }}
     .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:112px; height:68px; object-fit:cover; object-position:center; border-radius:999px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
     .content {{ padding:12px; }}
     .content h3 {{ margin:0 0 6px; font-size:18px; }}
