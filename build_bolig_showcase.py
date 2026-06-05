@@ -19,7 +19,7 @@ OUTPUT_HTML = Path("Bolig_oversigt_modern.html")
 OUTPUT_LIGHT_HTML = Path("Bolig_oversigt_light.html")
 WEB_DIR = Path("web")
 SEEN_STATE_FILE = Path(".listing_seen_state.json")
-NEW_BADGE_DAYS = 7
+NEW_BADGE_DAYS = 3
 
 BILLUND_LAT = 55.7308
 BILLUND_LON = 9.1153
