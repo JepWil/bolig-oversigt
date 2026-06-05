@@ -105,16 +105,19 @@ def format_float(value: Any, suffix: str = "") -> str:
 def static_map_preview_urls(lat: float | None, lon: float | None) -> tuple[str, str] | None:
     if lat is None or lon is None:
         return None
+    center_lat = (lat + BILLUND_LAT) / 2
+    center_lon = (lon + BILLUND_LON) / 2
     primary = (
         "https://staticmap.openstreetmap.de/staticmap.php"
-        f"?center={lat:.5f},{lon:.5f}&zoom=12&size=220x120"
-        f"&markers={lat:.5f},{lon:.5f},red-pushpin"
+        f"?center={center_lat:.5f},{center_lon:.5f}&zoom=11&size=260x150"
+        f"&markers={lat:.5f},{lon:.5f},red-pushpin|{BILLUND_LAT:.5f},{BILLUND_LON:.5f},blue-pushpin"
     )
     fallback = (
         "https://maps.geoapify.com/v1/staticmap"
         "?style=osm-carto"
-        f"&width=220&height=120&center=lonlat:{lon:.5f},{lat:.5f}&zoom=12"
+        f"&width=260&height=150&center=lonlat:{center_lon:.5f},{center_lat:.5f}&zoom=11"
         f"&marker=lonlat:{lon:.5f},{lat:.5f};color:%23d64545;size:medium"
+        f"&marker=lonlat:{BILLUND_LON:.5f},{BILLUND_LAT:.5f};color:%23306ed8;size:medium"
     )
     return primary, fallback
 
@@ -273,7 +276,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
     .rank,.distance {{ position:relative; z-index:1; align-self:flex-start; display:inline-flex; align-items:center; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; line-height:1.15; white-space:nowrap; }}
-    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:112px; height:68px; object-fit:cover; object-position:center; border-radius:999px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
+    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; object-fit:cover; object-position:center; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
     .content {{ padding:12px; }}
     .content h3 {{ margin:0 0 6px; font-size:18px; }}
     .meta,.desc {{ margin:0 0 8px; color:#4f5f56; font-size:13px; }}
