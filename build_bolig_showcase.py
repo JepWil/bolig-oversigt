@@ -8,6 +8,7 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
@@ -102,24 +103,50 @@ def format_float(value: Any, suffix: str = "") -> str:
         return "-"
 
 
-def static_map_preview_urls(lat: float | None, lon: float | None) -> tuple[str, str] | None:
+def static_map_preview_data_uri(lat: float | None, lon: float | None, distance_km: float | None) -> str | None:
     if lat is None or lon is None:
         return None
-    center_lat = (lat + BILLUND_LAT) / 2
-    center_lon = (lon + BILLUND_LON) / 2
-    primary = (
-        "https://staticmap.openstreetmap.de/staticmap.php"
-        f"?center={center_lat:.5f},{center_lon:.5f}&zoom=11&size=260x150"
-        f"&markers={lat:.5f},{lon:.5f},red-pushpin|{BILLUND_LAT:.5f},{BILLUND_LON:.5f},blue-pushpin"
-    )
-    fallback = (
-        "https://maps.geoapify.com/v1/staticmap"
-        "?style=osm-carto"
-        f"&width=260&height=150&center=lonlat:{center_lon:.5f},{center_lat:.5f}&zoom=11"
-        f"&marker=lonlat:{lon:.5f},{lat:.5f};color:%23d64545;size:medium"
-        f"&marker=lonlat:{BILLUND_LON:.5f},{BILLUND_LAT:.5f};color:%23306ed8;size:medium"
-    )
-    return primary, fallback
+    width = 252
+    height = 156
+    pad = 28
+    dx_km = (lon - BILLUND_LON) * 111.32 * math.cos(math.radians((lat + BILLUND_LAT) / 2))
+    dy_km = (lat - BILLUND_LAT) * 110.57
+    extent = max(abs(dx_km), abs(dy_km), 3.0)
+    usable_x = width - pad * 2
+    usable_y = height - pad * 2
+    scale = min(usable_x, usable_y) / (extent * 2.4)
+
+    center_x = width / 2
+    center_y = height / 2
+    bolig_x = center_x + dx_km * scale
+    bolig_y = center_y - dy_km * scale
+    billund_x = center_x - dx_km * scale
+    billund_y = center_y + dy_km * scale
+    distance_label = format_float(distance_km, " km") if distance_km is not None else "-"
+
+    svg = f"""
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {width} {height}'>
+    <defs>
+        <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#edf6f1'/>
+            <stop offset='100%' stop-color='#dceae2'/>
+        </linearGradient>
+    </defs>
+    <rect width='{width}' height='{height}' rx='18' fill='url(#bg)'/>
+    <path d='M12 124 C56 110, 72 134, 116 120 S192 92, 240 108' fill='none' stroke='#b7cdc0' stroke-width='8' stroke-linecap='round' opacity='0.9'/>
+    <path d='M24 36 C72 54, 114 26, 154 42 S216 78, 232 68' fill='none' stroke='#cadbd0' stroke-width='6' stroke-linecap='round' opacity='0.75'/>
+    <path d='M{billund_x:.1f} {billund_y:.1f} L{bolig_x:.1f} {bolig_y:.1f}' stroke='#3f5f56' stroke-width='3' stroke-dasharray='7 6' opacity='0.8'/>
+    <circle cx='{billund_x:.1f}' cy='{billund_y:.1f}' r='9' fill='#2f6ed8'/>
+    <circle cx='{billund_x:.1f}' cy='{billund_y:.1f}' r='4' fill='white'/>
+    <circle cx='{bolig_x:.1f}' cy='{bolig_y:.1f}' r='9' fill='#d64545'/>
+    <circle cx='{bolig_x:.1f}' cy='{bolig_y:.1f}' r='4' fill='white'/>
+    <rect x='12' y='12' width='96' height='26' rx='13' fill='rgba(255,255,255,0.78)'/>
+    <text x='22' y='29' font-family='Space Grotesk, Arial, sans-serif' font-size='12' font-weight='700' fill='#18312a'>Til Billund: {distance_label}</text>
+    <text x='{min(max(billund_x - 18, 10), width - 72):.1f}' y='{min(max(billund_y - 14, 18), height - 18):.1f}' font-family='Space Grotesk, Arial, sans-serif' font-size='11' font-weight='700' fill='#204f9d'>Billund</text>
+    <text x='{min(max(bolig_x - 10, 10), width - 52):.1f}' y='{min(max(bolig_y - 14, 18), height - 18):.1f}' font-family='Space Grotesk, Arial, sans-serif' font-size='11' font-weight='700' fill='#a22f2f'>Bolig</text>
+</svg>
+""".strip()
+    return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
 
 
 def fetch_card_media(url: str) -> dict[str, str | None]:
@@ -212,14 +239,11 @@ def card_markup(row: dict[str, Any]) -> str:
         image = row.get("image_url") or "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&w=1200&q=80"
         lat = to_float(row.get("lat"))
         lon = to_float(row.get("lon"))
-        map_preview_pair = static_map_preview_urls(lat, lon)
+        map_preview = static_map_preview_data_uri(lat, lon, to_float(row.get("distance_to_billund_km")))
         map_thumb_html = ""
-        if map_preview_pair:
-            primary_preview, fallback_preview = map_preview_pair
+        if map_preview:
             map_thumb_html = (
-                f'<img class="mapThumb" src="{safe_text(primary_preview)}" '
-                f'onerror="this.onerror=null;this.src=\'{safe_text(fallback_preview)}\';" '
-                'alt="Kort preview" loading="lazy" />'
+                f'<img class="mapThumb" src="{safe_text(map_preview)}" alt="Kort preview" loading="lazy" />'
             )
 
         title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
