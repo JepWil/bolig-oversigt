@@ -388,7 +388,10 @@ def create_map(rows: list[dict[str, Any]]) -> None:
 
 def copy_to_web_bundle() -> None:
     WEB_DIR.mkdir(parents=True, exist_ok=True)
-    (WEB_DIR / "pendling.html").write_text(OUTPUT_HTML.read_text(encoding="utf-8"), encoding="utf-8")
+    html = OUTPUT_HTML.read_text(encoding="utf-8")
+    Path("pendling.html").write_text(html, encoding="utf-8")
+    (WEB_DIR / "pendling.html").write_text(html, encoding="utf-8")
+    (WEB_DIR / OUTPUT_HTML.name).write_text(html, encoding="utf-8")
     (WEB_DIR / OUTPUT_CSV.name).write_text(OUTPUT_CSV.read_text(encoding="utf-8"), encoding="utf-8")
 
 

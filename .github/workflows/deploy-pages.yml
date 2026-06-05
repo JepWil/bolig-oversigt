@@ -34,6 +34,7 @@ jobs:
         run: |
           python enrich_bolig_csv.py
           python build_bolig_showcase.py
+          python build_pendling_map.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

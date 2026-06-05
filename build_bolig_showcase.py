@@ -248,7 +248,9 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .tabs {{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }}
     .tabs button {{ border:1px solid #cfd9d2; background:#fff; border-radius:999px; padding:8px 12px; font:inherit; cursor:pointer; }}
     .tabs button.active {{ background:#1f5e50; color:#fff; border-color:#1f5e50; }}
+    .filterToggle {{ border:1px solid #b9cbc3; background:#f9fffc; border-radius:999px; padding:8px 12px; font:inherit; cursor:pointer; color:#1e4c42; }}
     .toolbar {{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:12px; }}
+    .toolbar.collapsed {{ display:none; }}
     .toolbar label {{ font-size:13px; color:#4f5f56; }}
     .toolbar input,.toolbar select {{ border:1px solid #c8d3cb; border-radius:8px; padding:7px; font:inherit; }}
     .panel {{ display:none; }}
@@ -285,9 +287,10 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
       <button class=\"tabBtn active\" data-view=\"cards\">Kortliste</button>
       <button class=\"tabBtn\" data-view=\"map\">Interaktivt Kort</button>
       <button id=\"modeToggle\">Skift til Light</button>
+            <button id=\"filterToggle\" class=\"filterToggle\">Vis filtre og sortering</button>
     </section>
 
-    <section class=\"toolbar\" id=\"filtersBar\">
+        <section class=\"toolbar collapsed\" id=\"filtersBar\">
       <label>Maks husleje <input id=\"rentMax\" type=\"number\" value=\"12000\" /></label>
       <label>Min værelser <select id=\"roomsMin\"><option value=\"0\">Alle</option><option value=\"2\">2+</option><option value=\"3\" selected>3+</option><option value=\"4\">4+</option></select></label>
       <label>Husdyr <select id=\"dogFilter\"><option value=\"all\">Alle</option><option value=\"dog\">Kun hund tilladt</option></select></label>
@@ -297,7 +300,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
 
     <section id=\"cardsPanel\" class=\"panel active\"><div class=\"grid\" id=\"grid\">{cards}</div></section>
     <section id=\"mapPanel\" class=\"panel\">
-      <p class=\"mapHelp\">Kortet hentes fra lokal fil <b>Bolig_kort_pendling.html</b>. Hvis det er tomt, kør appen igen for at opdatere pendlingskortet.</p>
+    <p class=\"mapHelp\">Kortet hentes automatisk fra pendlingssiden (lokalt eller hostet). Hvis det er tomt, kør appen igen for at opdatere pendlingskortet.</p>
       <iframe id=\"mapFrame\" src=\"Bolig_kort_pendling.html\" title=\"Pendling map\"></iframe>
     </section>
   </main>
@@ -310,10 +313,15 @@ const dogFilter = document.getElementById('dogFilter');
 const sortBy = document.getElementById('sortBy');
 const highlightDog = document.getElementById('highlightDog');
 const modeToggle = document.getElementById('modeToggle');
+const filterToggle = document.getElementById('filterToggle');
 const tabButtons = Array.from(document.querySelectorAll('.tabBtn'));
 const cardsPanel = document.getElementById('cardsPanel');
 const mapPanel = document.getElementById('mapPanel');
 const filtersBar = document.getElementById('filtersBar');
+const mapFrame = document.getElementById('mapFrame');
+
+const hosted = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+mapFrame.src = hosted ? 'pendling.html' : 'Bolig_kort_pendling.html';
 
 function applySort() {{
   const mode = sortBy.value;
@@ -347,13 +355,25 @@ function activateView(view) {{
   const isCards = view === 'cards';
   cardsPanel.classList.toggle('active', isCards);
   mapPanel.classList.toggle('active', !isCards);
-  filtersBar.style.display = isCards ? 'flex' : 'none';
+    if (!isCards) {{
+        filtersBar.style.display = 'none';
+        filterToggle.style.display = 'none';
+    }} else {{
+        filterToggle.style.display = 'inline-block';
+        filtersBar.style.display = filtersBar.classList.contains('collapsed') ? 'none' : 'flex';
+    }}
   tabButtons.forEach((b) => b.classList.toggle('active', b.dataset.view === view));
 }}
 
 tabButtons.forEach((btn) => btn.addEventListener('click', () => activateView(btn.dataset.view)));
 [rentMax, roomsMin, dogFilter, highlightDog].forEach((el) => el.addEventListener('input', applyFilters));
 sortBy.addEventListener('change', applySort);
+filterToggle.addEventListener('click', () => {{
+    filtersBar.classList.toggle('collapsed');
+    const collapsed = filtersBar.classList.contains('collapsed');
+    filtersBar.style.display = collapsed ? 'none' : 'flex';
+    filterToggle.textContent = collapsed ? 'Vis filtre og sortering' : 'Skjul filtre og sortering';
+}});
 modeToggle.addEventListener('click', () => {{
   document.body.classList.toggle('light-mode');
   modeToggle.textContent = document.body.classList.contains('light-mode') ? 'Skift til Modern' : 'Skift til Light';
