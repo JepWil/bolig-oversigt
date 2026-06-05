@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Boligoversigt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#f7f4ef; --ink:#15211f; --accent:#0d7a5f; --soft:#d7efe8; --card:#fffdf8; --muted:#5d6b69; --line:#deebe5; --radius:18px; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:'Space Grotesk',sans-serif; color:var(--ink); background:radial-gradient(circle at 8% 8%,#ffe5c9 0,transparent 35%), radial-gradient(circle at 92% 15%,#d5f3e5 0,transparent 32%), linear-gradient(160deg,#f8f5ef 0%,#eef7f3 100%); }
+    .wrap { max-width:1220px; margin:0 auto; padding:20px; }
+    h1 { margin:0 0 6px; font-family:'Fraunces',serif; font-size:clamp(28px,4vw,44px); }
+    .sub { margin:0 0 14px; color:var(--muted); }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .tabs button { border:1px solid #cfd9d2; background:#fff; border-radius:999px; padding:8px 12px; font:inherit; cursor:pointer; }
+    .tabs button.active { background:#1f5e50; color:#fff; border-color:#1f5e50; }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:12px; }
+    .toolbar label { font-size:13px; color:#4f5f56; }
+    .toolbar input,.toolbar select { border:1px solid #c8d3cb; border-radius:8px; padding:7px; font:inherit; }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:0 10px 26px rgba(15,47,41,.12); }
+    .card.dog-friendly { border-color:#8fcea8; }
+    .hero { height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; padding:10px; }
+    .overlay { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }
+    .rank,.distance { position:relative; z-index:1; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; }
+    .mapThumb { position:absolute; right:10px; bottom:10px; z-index:1; width:108px; height:62px; object-fit:cover; border-radius:10px; border:2px solid rgba(255,255,255,.9); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }
+    .content { padding:12px; }
+    .content h3 { margin:0 0 6px; font-size:18px; }
+    .meta,.desc { margin:0 0 8px; color:#4f5f56; font-size:13px; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    .chips span { background:var(--soft); border-radius:999px; padding:3px 8px; font-size:11px; }
+    .stats,.score { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px; }
+    .stats div,.score div { border:1px solid var(--line); border-radius:10px; padding:6px; background:#fbfefb; }
+    .actions a { display:inline-block; text-decoration:none; background:linear-gradient(135deg,var(--accent),#0f9271); color:#fff; border-radius:10px; padding:7px 10px; font-weight:700; font-size:13px; }
+    body.light-mode .desc, body.light-mode .stats, body.light-mode .score { display:none; }
+    body.light-mode .hero { height:190px; }
+    body.light-mode .content h3 { font-size:17px; }
+    #mapFrame { width:100%; height:74vh; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .mapHelp { font-size:13px; color:#4f5f56; margin:0 0 8px; }
+    @media (max-width:760px) { .stats,.score { grid-template-columns:1fr; } .hero { height:160px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Boligoversigt med Billund i fokus</h1>
+    <p class="sub">Samlet visning med modern + light mode og indbygget kort. Opdateret: 05-06-2026 15:54</p>
+
+    <section class="tabs">
+      <button class="tabBtn active" data-view="cards">Kortliste</button>
+      <button class="tabBtn" data-view="map">Interaktivt Kort</button>
+      <button id="modeToggle">Skift til Light</button>
+    </section>
+
+    <section class="toolbar" id="filtersBar">
+      <label>Maks husleje <input id="rentMax" type="number" value="12000" /></label>
+      <label>Min værelser <select id="roomsMin"><option value="0">Alle</option><option value="2">2+</option><option value="3" selected>3+</option><option value="4">4+</option></select></label>
+      <label>Husdyr <select id="dogFilter"><option value="all">Alle</option><option value="dog">Kun hund tilladt</option></select></label>
+      <label>Sortering <select id="sortBy"><option value="billund">Billund-rang</option><option value="distance">Kortest afstand</option><option value="rentAsc">Laveste pris</option><option value="rentDesc">Højeste pris</option><option value="scoreDesc">Højeste score</option></select></label>
+      <label><input id="highlightDog" type="checkbox" checked /> Fremhæv hund-venlige</label>
+    </section>
+
+    <section id="cardsPanel" class="panel active"><div class="grid" id="grid">
+        <article class="card dog-friendly" data-rent="9995" data-rooms="3" data-distance="1.5" data-score="90.2" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/4d0b25702dd0b67d81eb888f5e0164d9?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#1</div><div class="distance">1.5 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.71800,9.10700&zoom=13&size=220x120&markers=55.71800,9.10700,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Nyopført rækkehuse til leje🏡 - 95 m² - 9.995 kr</h3>
+                <p class="meta">Tøndebåndet, 7190 Billund</p>
+                <p class="desc">Skønt nyopført 3 værelses rækkehus til leje i Billund ved Tøndebåndet Velkommen til et moderne og l</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.995 kr</strong></div><div><small>Indflytning</small><strong>39.980 kr</strong></div><div><small>Kr/m²</small><strong>105.2</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>96.2</strong></div><div><small>Billund-prio</small><strong>90.2</strong></div><div><small>Samlet</small><strong>90</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/95m2-3-vaer-id-5442903" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9795" data-rooms="3" data-distance="1.6" data-score="89.3" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/94deaf704645fd7a1fccb99ddd080528?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#2</div><div class="distance">1.6 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.72400,9.09200&zoom=13&size=220x120&markers=55.72400,9.09200,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Engen i Billund udlejes - 91 m² - 9.795 kr</h3>
+                <p class="meta">Engen, 7190 Billund</p>
+                <p class="desc">Velkommen til Ankelbo i Billund. Ankelbo byder dig velkommen med 98 rækkehuse, alle konstrueret på</p>
+                <div class="chips"><span>Rækkehus</span><span>91 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.795 kr</strong></div><div><small>Indflytning</small><strong>48.975 kr</strong></div><div><small>Kr/m²</small><strong>107.6</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>96.0</strong></div><div><small>Billund-prio</small><strong>89.3</strong></div><div><small>Samlet</small><strong>89</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/91m2-3-vaer-id-5472558" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9995" data-rooms="4" data-distance="1.7" data-score="91.7" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/ec64ad956d75c75e658837fae0942021?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#3</div><div class="distance">1.7 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.72100,9.09500&zoom=13&size=220x120&markers=55.72100,9.09500,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>4 værelses rækkehus på Læhegnet i Billund udlejes - 98 m² - 9.995 kr</h3>
+                <p class="meta">Læhegnet, 7190 Billund</p>
+                <p class="desc">Velkommen til Ankelbo i Billund. Ankelbo byder dig velkommen med 98 rækkehuse,alle konstrueret i é</p>
+                <div class="chips"><span>Rækkehus</span><span>98 m²</span><span>4 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.995 kr</strong></div><div><small>Indflytning</small><strong>49.975 kr</strong></div><div><small>Kr/m²</small><strong>102.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>95.7</strong></div><div><small>Billund-prio</small><strong>91.7</strong></div><div><small>Samlet</small><strong>94</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/98m2-4-vaer-id-5431909" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9999" data-rooms="3" data-distance="12.7" data-score="70.5" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/e8ce1ac1679cb4902d1d17ad1f97b57f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#4</div><div class="distance">12.7 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.83500,9.19800&zoom=13&size=220x120&markers=55.83500,9.19800,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Sire Eskildsens Vej i Give - 95 m² - 9.999 kr</h3>
+                <p class="meta">Sire Eskildsens Vej, 7323 Give</p>
+                <p class="desc">### **Velkommen indenfor** På Sire Eskildsens Vej finder du dette moderne dobbelthus, hvor funktion</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.999 kr</strong></div><div><small>Indflytning</small><strong>39.996 kr</strong></div><div><small>Kr/m²</small><strong>105.3</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>68.2</strong></div><div><small>Billund-prio</small><strong>70.5</strong></div><div><small>Samlet</small><strong>84</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5598029" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9745" data-rooms="4" data-distance="12.9" data-score="73.6" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/1d5ecc94553d5eda70c42bb361673283?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#5</div><div class="distance">12.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.83700,9.19900&zoom=13&size=220x120&markers=55.83700,9.19900,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>4 værelses rækkehus på Ane Sørensens Vej i Give ud - 95 m² - 9.745 kr</h3>
+                <p class="meta">Ane Sørensens Vej, 7323 Give</p>
+                <p class="desc">**Et hjem med ro, lys og plads til hverdagen** På Ane Sørensens Vej finder du et moderne dobbelthus</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>4 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.745 kr</strong></div><div><small>Indflytning</small><strong>38.980 kr</strong></div><div><small>Kr/m²</small><strong>102.6</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>67.7</strong></div><div><small>Billund-prio</small><strong>73.6</strong></div><div><small>Samlet</small><strong>95</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598027" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9917" data-rooms="4" data-distance="12.9" data-score="72.2" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/ec4f5fb8dcc60441747749fad530027d?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#6</div><div class="distance">12.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.83600,9.20100&zoom=13&size=220x120&markers=55.83600,9.20100,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>4 værelses rækkehus på Ane Sørensens Vej i Give ud - 95 m² - 9.917 kr</h3>
+                <p class="meta">Ane Sørensens Vej, 7323 Give</p>
+                <p class="desc">På en fredelig stikvej i Pigernes Kvarter ligger dette indflytningsklare rækkehus på Ane Sørensens V</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>4 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.917 kr</strong></div><div><small>Indflytning</small><strong>39.668 kr</strong></div><div><small>Kr/m²</small><strong>104.4</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>67.7</strong></div><div><small>Billund-prio</small><strong>72.2</strong></div><div><small>Samlet</small><strong>91</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598025" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9595" data-rooms="3" data-distance="12.9" data-score="71.4" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/08c08e3a16c2337859da338c9a630a8c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#7</div><div class="distance">12.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.83600,9.20400&zoom=13&size=220x120&markers=55.83600,9.20400,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Dejligt lyst og nyere rækkehus, - tæt på natur og - 95 m² - 9.595 kr</h3>
+                <p class="meta">Jensine Nielsens Vej, 7323 Give</p>
+                <p class="desc">Dette 3-værelses rækkehus ligger på en stille vej i naturskønne omgivelser i Give. Huset indeholder</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.595 kr</strong></div><div><small>Indflytning</small><strong>38.170 kr</strong></div><div><small>Kr/m²</small><strong>101.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>67.7</strong></div><div><small>Billund-prio</small><strong>71.4</strong></div><div><small>Samlet</small><strong>85</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5532006" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9099" data-rooms="3" data-distance="12.9" data-score="66.8" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/6b7eac2a56df4f35ab399fe2ef803fd8?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#8</div><div class="distance">12.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.83700,9.19800&zoom=13&size=220x120&markers=55.83700,9.19800,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Ane Sørensens Vej i Give ud - 85 m² - 9.099 kr</h3>
+                <p class="meta">Ane Sørensens Vej, 7323 Give</p>
+                <p class="desc">I Pigernes Kvarter i Give finder du dette indbydende dobbelthus på 85 m² – et hjem, hvor lysindfald,</p>
+                <div class="chips"><span>Rækkehus</span><span>85 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.099 kr</strong></div><div><small>Indflytning</small><strong>36.396 kr</strong></div><div><small>Kr/m²</small><strong>107.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>67.7</strong></div><div><small>Billund-prio</small><strong>66.8</strong></div><div><small>Samlet</small><strong>72</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/give/85m2-3-vaer-id-5604793" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card" data-rent="9027" data-rooms="4" data-distance="13.9" data-score="76.9" data-dog="no">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/c23e69d12b4b03a397a72f533deb0596?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#9</div><div class="distance">13.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.77000,9.32700&zoom=13&size=220x120&markers=55.77000,9.32700,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Rækkehus udlejes - 107 m² - 9.027 kr</h3>
+                <p class="meta">Sejershaven, 7321 Gadbjerg</p>
+                <p class="desc">Velindrettet rækkehus i Gadbjerg udlejes. Huset er indrettet med: Entre med garderobe og teknikska</p>
+                <div class="chips"><span>Rækkehus</span><span>107 m²</span><span>4 vær.</span><span>Ingen hund</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.027 kr</strong></div><div><small>Indflytning</small><strong>36.108 kr</strong></div><div><small>Kr/m²</small><strong>84.4</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>65.2</strong></div><div><small>Billund-prio</small><strong>76.9</strong></div><div><small>Samlet</small><strong>98</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/gadbjerg/107m2-4-vaer-id-5260371" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9995" data-rooms="3" data-distance="17.4" data-score="61.6" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/78c604bb2bc6eced73ec84a2af1d64b2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#10</div><div class="distance">17.4 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.70600,9.39000&zoom=13&size=220x120&markers=55.70600,9.39000,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Herman Bangs Vej i Bredsten - 95 m² - 9.995 kr</h3>
+                <p class="meta">Herman Bangs Vej, 7182 Bredsten</p>
+                <p class="desc">Velkommen til Herman Bangs Vej i Bredsten! På Herman Bangs Vej i Bredsten – tæt på Vejle og Billund</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.995 kr</strong></div><div><small>Indflytning</small><strong>49.975 kr</strong></div><div><small>Kr/m²</small><strong>105.2</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>56.4</strong></div><div><small>Billund-prio</small><strong>61.6</strong></div><div><small>Samlet</small><strong>79</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/bredsten/95m2-3-vaer-id-5638046" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card" data-rent="9200" data-rooms="4" data-distance="19.0" data-score="59.2" data-dog="no">
+            <div class="hero" style="background-image:url('https://www.boligportal.dk/static/images/no-image.jpg')"><div class="overlay"></div><div class="rank">#11</div><div class="distance">19.0 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.75700,9.41500&zoom=13&size=220x120&markers=55.75700,9.41500,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Dagligt byhus udlejes. - 96 m² - 9.200 kr</h3>
+                <p class="meta">Kollegievej, 7300 Jelling</p>
+                <p class="desc">Centralt beliggende hus udlejes i Jelling.</p>
+                <div class="chips"><span>Hus</span><span>96 m²</span><span>4 vær.</span><span>Ingen hund</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.200 kr</strong></div><div><small>Indflytning</small><strong>46.000 kr</strong></div><div><small>Kr/m²</small><strong>95.8</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>52.4</strong></div><div><small>Billund-prio</small><strong>59.2</strong></div><div><small>Samlet</small><strong>71</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/huse/jelling/96m2-4-vaer-id-5225772" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card" data-rent="10411" data-rooms="3" data-distance="19.9" data-score="57.8" data-dog="no">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/51b295046df2f83fa71352e497d95742?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#12</div><div class="distance">19.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.65300,9.40200&zoom=13&size=220x120&markers=55.65300,9.40200,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus - 101 m² - 10.411 kr</h3>
+                <p class="meta">Birke Allé, 7100 Vejle</p>
+                <p class="desc">Eksklusive 3 værelses lavenergi rækkehus centralt beliggende i Ødsted. Rækkehusene er bygget så der</p>
+                <div class="chips"><span>Rækkehus</span><span>101 m²</span><span>3 vær.</span><span>Ingen hund</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>10.411 kr</strong></div><div><small>Indflytning</small><strong>52.055 kr</strong></div><div><small>Kr/m²</small><strong>103.1</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>50.1</strong></div><div><small>Billund-prio</small><strong>57.8</strong></div><div><small>Samlet</small><strong>78</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/101m2-3-vaer-id-5289898" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9295" data-rooms="3" data-distance="20.1" data-score="60.7" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/7060ecc746cf7b44ae2e1fad642882ed?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#13</div><div class="distance">20.1 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.75400,9.43300&zoom=13&size=220x120&markers=55.75400,9.43300,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Havegangen i Jelling udleje - 95 m² - 9.295 kr</h3>
+                <p class="meta">Havegangen, 7300 Jelling</p>
+                <p class="desc">Velkommen til Haverne i Jelling – moderne étplansrækkehuse i naturskønne omgivelserI Haverne finder</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.295 kr</strong></div><div><small>Indflytning</small><strong>46.475 kr</strong></div><div><small>Kr/m²</small><strong>97.8</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>49.6</strong></div><div><small>Billund-prio</small><strong>60.7</strong></div><div><small>Samlet</small><strong>86</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-3-vaer-id-5551791" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9995" data-rooms="4" data-distance="20.1" data-score="60.5" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/97b2193e6cd13c2acc909e29b4ea906f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#14</div><div class="distance">20.1 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.75400,9.43300&zoom=13&size=220x120&markers=55.75400,9.43300,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>4 værelses rækkehus på Havegangen i Jelling udleje - 95 m² - 9.995 kr</h3>
+                <p class="meta">Havegangen, 7300 Jelling</p>
+                <p class="desc">Velkommen til Haverne i Jelling – moderne étplansrækkehuse i naturskønne omgivelser I Haverne finder</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>4 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.995 kr</strong></div><div><small>Indflytning</small><strong>49.975 kr</strong></div><div><small>Kr/m²</small><strong>105.2</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>49.6</strong></div><div><small>Billund-prio</small><strong>60.5</strong></div><div><small>Samlet</small><strong>92</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-4-vaer-id-5283314" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9795" data-rooms="3" data-distance="26.6" data-score="40.8" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/d4ded3c98fa4d8e12075d32c1870512c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#15</div><div class="distance">26.6 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.76400,9.53700&zoom=13&size=220x120&markers=55.76400,9.53700,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Lækkert dobbelthus med carport og have i skønne Gr - 79 m² - 9.795 kr</h3>
+                <p class="meta">Degnesvinget, 7100 Vejle</p>
+                <p class="desc">🏡 3-værelses rækkehus på 79 m² i Grejs Have – lys, moderne og naturskøn bolig Nu udlejes et skønt r</p>
+                <div class="chips"><span>Rækkehus</span><span>79 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.795 kr</strong></div><div><small>Indflytning</small><strong>39.180 kr</strong></div><div><small>Kr/m²</small><strong>124.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>33.3</strong></div><div><small>Billund-prio</small><strong>40.8</strong></div><div><small>Samlet</small><strong>73</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/79m2-3-vaer-id-5555587" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="11700" data-rooms="4" data-distance="26.7" data-score="48.0" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/d4d20fed1c3740a4cec6671638d556cf?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#16</div><div class="distance">26.7 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.55800,9.41000&zoom=13&size=220x120&markers=55.55800,9.41000,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>Nye moderne lejeboliger i skønne Vester Nebel - 108 m² - 11.700 kr</h3>
+                <p class="meta">Søstervænget, 6040 Egtved</p>
+                <p class="desc">Nybyggede rækkehuse til leje på Søstervænget i Vester Nebel – klar til indflytning 1. juli 2026 Drø</p>
+                <div class="chips"><span>Rækkehus</span><span>108 m²</span><span>4 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>11.700 kr</strong></div><div><small>Indflytning</small><strong>58.500 kr</strong></div><div><small>Kr/m²</small><strong>108.3</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>33.1</strong></div><div><small>Billund-prio</small><strong>48.0</strong></div><div><small>Samlet</small><strong>88</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/egtved/108m2-4-vaer-id-5620308" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9995" data-rooms="3" data-distance="26.9" data-score="49.1" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/9a47969697764f1046dd82759e0e3d1f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#17</div><div class="distance">26.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.76400,9.54100&zoom=13&size=220x120&markers=55.76400,9.54100,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på H. C. Monrads Vej i Vejle u - 99 m² - 9.995 kr</h3>
+                <p class="meta">H. C. Monrads Vej, 7100 Vejle</p>
+                <p class="desc">Moderne et-plans rækkehuse i Grejs På H. C. Monrads Vej i Grejs ved Vejle finder du 39 moderne og ti</p>
+                <div class="chips"><span>Rækkehus</span><span>99 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.995 kr</strong></div><div><small>Indflytning</small><strong>49.975 kr</strong></div><div><small>Kr/m²</small><strong>101.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>32.6</strong></div><div><small>Billund-prio</small><strong>49.1</strong></div><div><small>Samlet</small><strong>87</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/99m2-3-vaer-id-5274406" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9500" data-rooms="3" data-distance="29.1" data-score="44.8" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/59982e9554ad62ef5640d59335b5c556?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#18</div><div class="distance">29.1 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.46900,9.10500&zoom=13&size=220x120&markers=55.46900,9.10500,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>ENERGIVENLIGE RÆKKEHUSE PÅ VEJ! - 95 m² - 9.500 kr</h3>
+                <p class="meta">Lyhnes Vej, 6600 Vejen</p>
+                <p class="desc">💚Rækkehuse til leje på Lyhnes Vej, Askov - Vejen💚 Her er der husdyr tilladt efter aftale med os - v</p>
+                <div class="chips"><span>Rækkehus</span><span>95 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.500 kr</strong></div><div><small>Indflytning</small><strong>38.150 kr</strong></div><div><small>Kr/m²</small><strong>100.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>27.1</strong></div><div><small>Billund-prio</small><strong>44.8</strong></div><div><small>Samlet</small><strong>83</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/vejen/95m2-3-vaer-id-5387237" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9595" data-rooms="3" data-distance="31.2" data-score="32.9" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/a12569a6fd572e289bc057979d4d24d2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#19</div><div class="distance">31.2 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.47200,9.30600&zoom=13&size=220x120&markers=55.47200,9.30600,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Majsvang i Lunderskov udlej - 75 m² - 9.000 kr</h3>
+                <p class="meta">Majsvang, 6640 Lunderskov</p>
+                <p class="desc">### **Gå på opdagelse i vores 75 m² - 3 værelses rækkehus (Hvedevang 51) via vores virtuelle rundvis</p>
+                <div class="chips"><span>Rækkehus</span><span>75 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.595 kr</strong></div><div><small>Indflytning</small><strong>36.000 kr</strong></div><div><small>Kr/m²</small><strong>127.9</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>21.8</strong></div><div><small>Billund-prio</small><strong>32.9</strong></div><div><small>Samlet</small><strong>75</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/lunderskov/75m2-3-vaer-id-5563023" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="9895" data-rooms="3" data-distance="35.3" data-score="30.4" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/9fce15d56227f778ef2e22dac92b6c24?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#20</div><div class="distance">35.3 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.51700,9.53200&zoom=13&size=220x120&markers=55.51700,9.53200,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>3 værelses rækkehus på Teodorsvej i Kolding udleje - 86 m² - 9.895 kr</h3>
+                <p class="meta">Teodorsvej, 6000 Kolding</p>
+                <p class="desc">Velkommen til dette flotte 3-værelses rækkehus, som er ideelt til både den lille familie, parret ell</p>
+                <div class="chips"><span>Rækkehus</span><span>86 m²</span><span>3 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>9.895 kr</strong></div><div><small>Indflytning</small><strong>39.580 kr</strong></div><div><small>Kr/m²</small><strong>115.1</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>11.5</strong></div><div><small>Billund-prio</small><strong>30.4</strong></div><div><small>Samlet</small><strong>80</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/kolding/86m2-3-vaer-id-5636828" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        
+
+        <article class="card dog-friendly" data-rent="7738" data-rooms="2" data-distance="39.9" data-score="25.0" data-dog="yes">
+            <div class="hero" style="background-image:url('https://image-lambda.boligportal.dk/985e5d92a46286eb58e14c92ad0af4ea?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint')"><div class="overlay"></div><div class="rank">#21</div><div class="distance">39.9 km til Billund</div><img class="mapThumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=55.40600,9.38400&zoom=13&size=220x120&markers=55.40600,9.38400,red-pushpin" alt="Kort preview" loading="lazy" /></div>
+            <div class="content">
+                <h3>2 værelses rækkehus på Krovænget i Vamdrup udlejes - 86 m² - 7.738 kr</h3>
+                <p class="meta">Krovænget, 6580 Vamdrup</p>
+                <p class="desc">Drømmer du om et liv med ro og fred, men alligevel tæt på? Velkommen til Ødis! Oplev charmen og roe</p>
+                <div class="chips"><span>Rækkehus</span><span>86 m²</span><span>2 vær.</span><span>Hund OK</span></div>
+                <div class="stats"><div><small>Mdl. leje</small><strong>7.738 kr</strong></div><div><small>Indflytning</small><strong>47.699 kr</strong></div><div><small>Kr/m²</small><strong>90.0</strong></div></div>
+                <div class="score"><div><small>Distance-score</small><strong>0.0</strong></div><div><small>Billund-prio</small><strong>25.0</strong></div><div><small>Samlet</small><strong>65</strong></div></div>
+                <div class="actions"><a href="https://www.boligportal.dk/r%C3%A6kkehuse/vamdrup/86m2-2-vaer-id-5411408" target="_blank" rel="noopener noreferrer">Se annonce</a></div>
+            </div>
+        </article>
+        </div></section>
+    <section id="mapPanel" class="panel">
+      <p class="mapHelp">Kortet hentes fra lokal fil <b>Bolig_kort_pendling.html</b>. Hvis det er tomt, kør appen igen for at opdatere pendlingskortet.</p>
+      <iframe id="mapFrame" src="Bolig_kort_pendling.html" title="Pendling map"></iframe>
+    </section>
+  </main>
+
+<script>
+const grid = document.getElementById('grid');
+const rentMax = document.getElementById('rentMax');
+const roomsMin = document.getElementById('roomsMin');
+const dogFilter = document.getElementById('dogFilter');
+const sortBy = document.getElementById('sortBy');
+const highlightDog = document.getElementById('highlightDog');
+const modeToggle = document.getElementById('modeToggle');
+const tabButtons = Array.from(document.querySelectorAll('.tabBtn'));
+const cardsPanel = document.getElementById('cardsPanel');
+const mapPanel = document.getElementById('mapPanel');
+const filtersBar = document.getElementById('filtersBar');
+
+function applySort() {
+  const mode = sortBy.value;
+  const cards = Array.from(grid.children);
+  cards.sort((a,b) => {
+    if (mode === 'distance') return Number(a.dataset.distance) - Number(b.dataset.distance);
+    if (mode === 'rentAsc') return Number(a.dataset.rent) - Number(b.dataset.rent);
+    if (mode === 'rentDesc') return Number(b.dataset.rent) - Number(a.dataset.rent);
+    if (mode === 'scoreDesc') return Number(b.dataset.score) - Number(a.dataset.score);
+    return Number(a.querySelector('.rank').textContent.replace('#','')) - Number(b.querySelector('.rank').textContent.replace('#',''));
+  });
+  cards.forEach((c) => grid.appendChild(c));
+}
+
+function applyFilters() {
+  const max = Number(rentMax.value || 999999);
+  const minRooms = Number(roomsMin.value || 0);
+  const onlyDog = dogFilter.value === 'dog';
+  Array.from(grid.children).forEach((card) => {
+    const rent = Number(card.dataset.rent || 0);
+    const rooms = Number(card.dataset.rooms || 0);
+    const hasDog = card.dataset.dog === 'yes';
+    const visible = rent <= max && rooms >= minRooms && (!onlyDog || hasDog);
+    card.style.display = visible ? 'block' : 'none';
+    card.classList.toggle('dog-friendly', hasDog && highlightDog.checked);
+  });
+  applySort();
+}
+
+function activateView(view) {
+  const isCards = view === 'cards';
+  cardsPanel.classList.toggle('active', isCards);
+  mapPanel.classList.toggle('active', !isCards);
+  filtersBar.style.display = isCards ? 'flex' : 'none';
+  tabButtons.forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+}
+
+tabButtons.forEach((btn) => btn.addEventListener('click', () => activateView(btn.dataset.view)));
+[rentMax, roomsMin, dogFilter, highlightDog].forEach((el) => el.addEventListener('input', applyFilters));
+sortBy.addEventListener('change', applySort);
+modeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('light-mode');
+  modeToggle.textContent = document.body.classList.contains('light-mode') ? 'Skift til Modern' : 'Skift til Light';
+});
+applyFilters();
+</script>
+</body>
+</html>

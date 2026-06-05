@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pendling og kortoversigt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Newsreader:opsz,wght@6..72,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <style>
+    :root { --bg:#f2f4ef; --ink:#1f251d; --soft:#e8ece3; --line:#cfd7c8; --accent:#0f766e; --accent2:#dc6b2f; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:'Outfit',sans-serif; color:var(--ink); background:radial-gradient(circle at 10% 10%, #fff6dd 0, transparent 35%), radial-gradient(circle at 95% 5%, #def7ee 0, transparent 35%), var(--bg); }
+    .wrap { max-width:1360px; margin:0 auto; padding:16px; }
+    h1 { margin:0 0 6px; font-family:'Newsreader',serif; font-size:clamp(28px,4vw,44px); }
+    .lead { margin:0 0 12px; color:#4f5a4b; }
+    .controls { display:grid; grid-template-columns: repeat(4, minmax(150px, 180px)) minmax(300px, 1fr); gap:10px; margin-bottom:12px; align-items:start; }
+    .controls > div { background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; }
+    .control-location { grid-column: 5; }
+    label { font-size:12px; color:#5d6658; display:block; margin-bottom:6px; }
+    input, select { width:100%; border:1px solid #c5cfbc; border-radius:8px; padding:7px; font:inherit; }
+    .groups { display:flex; flex-wrap:wrap; gap:8px; max-height:98px; overflow:auto; padding-right:2px; }
+    .groups label { display:flex; align-items:center; gap:4px; background:#fff; border:1px solid var(--line); border-radius:999px; padding:5px 10px; margin:0; }
+    .layout { display:grid; grid-template-columns: 1.15fr .85fr; gap:12px; }
+    #map { height:70vh; border-radius:14px; border:1px solid var(--line); }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px; overflow:auto; max-height:70vh; }
+    .group-block { margin-bottom:10px; }
+    .group-block h3 { margin:0 0 6px; font-size:15px; color:#2c3328; }
+    .item { display:grid; grid-template-columns:68px 1fr auto; gap:8px; align-items:center; border:1px solid #e1e7dc; border-radius:10px; padding:6px; margin-bottom:6px; background:#fcfdfa; }
+    .item img { width:68px; height:56px; object-fit:cover; border-radius:8px; background:#edf1e9; }
+    .meta b { font-size:13px; display:block; line-height:1.2; }
+    .meta small { color:#596255; font-size:12px; }
+    .tag { font-size:11px; border:1px solid #c6d3c4; border-radius:999px; padding:3px 8px; background:#f2f8f2; }
+    .dog { border-color:#85c29f; background:#eaf7ef; }
+    .item a { text-decoration:none; color:#0a5f59; font-weight:600; }
+    @media (max-width: 980px) { .layout { grid-template-columns:1fr; } #map,.panel { max-height:none; height:50vh; } .controls { grid-template-columns:1fr 1fr; } .control-location { grid-column: 1 / -1; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Pendletid og lokationsoverblik</h1>
+    <p class="lead">Interaktivt kort med billund-pendling, prisfilter, hund-filter og tydelig inddeling efter lokation (Billund/Jelling/Give/Kolding osv.).</p>
+
+    <section class="controls">
+      <div>
+        <label>Maks pendletid (min)</label>
+        <input id="maxCommute" type="number" value="45" min="0" />
+      </div>
+      <div>
+        <label>Maks husleje</label>
+        <input id="maxRent" type="number" value="12000" min="0" />
+      </div>
+      <div>
+        <label>Sortering</label>
+        <select id="sortBy">
+          <option value="commute">Kortest pendletid</option>
+          <option value="rent">Laveste pris</option>
+          <option value="score">Hojeste score</option>
+        </select>
+      </div>
+      <div>
+        <label>Husdyr</label>
+        <select id="dogOnly">
+          <option value="all">Alle</option>
+          <option value="dog">Kun hund tilladt</option>
+        </select>
+      </div>
+      <div class="control-location">
+        <label>Lokation</label>
+        <div class="groups" id="groupChecks"><label><input type='checkbox' class='groupCheck' value='Billund' checked> Billund (3)</label><label><input type='checkbox' class='groupCheck' value='Bredsten' checked> Bredsten (1)</label><label><input type='checkbox' class='groupCheck' value='Egtved/Vester Nebel' checked> Egtved/Vester Nebel (1)</label><label><input type='checkbox' class='groupCheck' value='Gadbjerg' checked> Gadbjerg (1)</label><label><input type='checkbox' class='groupCheck' value='Give' checked> Give (5)</label><label><input type='checkbox' class='groupCheck' value='Jelling' checked> Jelling (3)</label><label><input type='checkbox' class='groupCheck' value='Kolding' checked> Kolding (1)</label><label><input type='checkbox' class='groupCheck' value='Lunderskov' checked> Lunderskov (1)</label><label><input type='checkbox' class='groupCheck' value='Vamdrup/Oedis' checked> Vamdrup/Oedis (1)</label><label><input type='checkbox' class='groupCheck' value='Vejen/Askov' checked> Vejen/Askov (1)</label><label><input type='checkbox' class='groupCheck' value='Vejle/Grejs/Oedsted' checked> Vejle/Grejs/Oedsted (3)</label></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div id="map"></div>
+      <aside class="panel" id="listPanel"></aside>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const billund = { lat: 55.7308, lon: 9.1153 };
+    const listings = [{"pendling_rank": 1, "billund_rank": "3", "city": "Billund", "group": "Billund", "address": "Læhegnet", "postal_code": "7190", "city_from_page": "Billund", "lat": 55.721, "lon": 9.095, "rent": 9995, "score": 91.7, "commute_min": 5.4, "commute_km": 2.8, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/billund/98m2-4-vaer-id-5431909", "image": "https://image-lambda.boligportal.dk/ec64ad956d75c75e658837fae0942021?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "4 værelses rækkehus på Læhegnet i Billund udlejes - 98 m² - 9.995 kr", "type": "Rækkehus", "area": 98.0, "rooms": 4.0}, {"pendling_rank": 2, "billund_rank": "1", "city": "Billund", "group": "Billund", "address": "Tøndebåndet", "postal_code": "7190", "city_from_page": "Billund", "lat": 55.718, "lon": 9.107, "rent": 9995, "score": 90.2, "commute_min": 5.7, "commute_km": 2.8, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/billund/95m2-3-vaer-id-5442903", "image": "https://image-lambda.boligportal.dk/4d0b25702dd0b67d81eb888f5e0164d9?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "Nyopført rækkehuse til leje🏡 - 95 m² - 9.995 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 3, "billund_rank": "2", "city": "Billund", "group": "Billund", "address": "Engen", "postal_code": "7190", "city_from_page": "Billund", "lat": 55.724, "lon": 9.092, "rent": 9795, "score": 89.3, "commute_min": 6.2, "commute_km": 3.1, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/billund/91m2-3-vaer-id-5472558", "image": "https://image-lambda.boligportal.dk/94deaf704645fd7a1fccb99ddd080528?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Engen i Billund udlejes - 91 m² - 9.795 kr", "type": "Rækkehus", "area": 91.0, "rooms": 3.0}, {"pendling_rank": 4, "billund_rank": "8", "city": "Give", "group": "Give", "address": "Ane Sørensens Vej", "postal_code": "7323", "city_from_page": "Give", "lat": 55.837, "lon": 9.198, "rent": 9099, "score": 66.8, "commute_min": 16.5, "commute_km": 15.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/give/85m2-3-vaer-id-5604793", "image": "https://image-lambda.boligportal.dk/6b7eac2a56df4f35ab399fe2ef803fd8?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Ane Sørensens Vej i Give ud - 85 m² - 9.099 kr", "type": "Rækkehus", "area": 85.0, "rooms": 3.0}, {"pendling_rank": 5, "billund_rank": "5", "city": "Give (Pigernes Kvarter)", "group": "Give", "address": "Ane Sørensens Vej", "postal_code": "7323", "city_from_page": "Give", "lat": 55.837, "lon": 9.199, "rent": 9745, "score": 73.6, "commute_min": 16.7, "commute_km": 15.7, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598027", "image": "https://image-lambda.boligportal.dk/1d5ecc94553d5eda70c42bb361673283?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "4 værelses rækkehus på Ane Sørensens Vej i Give ud - 95 m² - 9.745 kr", "type": "Rækkehus", "area": 95.0, "rooms": 4.0}, {"pendling_rank": 6, "billund_rank": "7", "city": "Give", "group": "Give", "address": "Jensine Nielsens Vej", "postal_code": "7323", "city_from_page": "Give", "lat": 55.836, "lon": 9.204, "rent": 9595, "score": 71.4, "commute_min": 18.8, "commute_km": 17.0, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5532006", "image": "https://image-lambda.boligportal.dk/08c08e3a16c2337859da338c9a630a8c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "Dejligt lyst og nyere rækkehus, - tæt på natur og - 95 m² - 9.595 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 7, "billund_rank": "6", "city": "Give (Pigernes Kvarter)", "group": "Give", "address": "Ane Sørensens Vej", "postal_code": "7323", "city_from_page": "Give", "lat": 55.836, "lon": 9.201, "rent": 9917, "score": 72.2, "commute_min": 19.3, "commute_km": 17.3, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598025", "image": "https://image-lambda.boligportal.dk/ec4f5fb8dcc60441747749fad530027d?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "4 værelses rækkehus på Ane Sørensens Vej i Give ud - 95 m² - 9.917 kr", "type": "Rækkehus", "area": 95.0, "rooms": 4.0}, {"pendling_rank": 8, "billund_rank": "10", "city": "Bredsten", "group": "Bredsten", "address": "Herman Bangs Vej", "postal_code": "7182", "city_from_page": "Bredsten", "lat": 55.706, "lon": 9.39, "rent": 9995, "score": 61.6, "commute_min": 19.7, "commute_km": 19.8, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/bredsten/95m2-3-vaer-id-5638046", "image": "https://image-lambda.boligportal.dk/78c604bb2bc6eced73ec84a2af1d64b2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Herman Bangs Vej i Bredsten - 95 m² - 9.995 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 9, "billund_rank": "4", "city": "Give", "group": "Give", "address": "Sire Eskildsens Vej", "postal_code": "7323", "city_from_page": "Give", "lat": 55.835, "lon": 9.198, "rent": 9999, "score": 70.5, "commute_min": 20.1, "commute_km": 17.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5598029", "image": "https://image-lambda.boligportal.dk/e8ce1ac1679cb4902d1d17ad1f97b57f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Sire Eskildsens Vej i Give - 95 m² - 9.999 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 10, "billund_rank": "9", "city": "Gadbjerg", "group": "Gadbjerg", "address": "Sejershaven", "postal_code": "7321", "city_from_page": "Gadbjerg", "lat": 55.77, "lon": 9.327, "rent": 9027, "score": 76.9, "commute_min": 20.9, "commute_km": 19.1, "dog": false, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/gadbjerg/107m2-4-vaer-id-5260371", "image": "https://image-lambda.boligportal.dk/c23e69d12b4b03a397a72f533deb0596?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "Rækkehus udlejes - 107 m² - 9.027 kr", "type": "Rækkehus", "area": 107.0, "rooms": 4.0}, {"pendling_rank": 11, "billund_rank": "12", "city": "Ødsted", "group": "Vejle/Grejs/Oedsted", "address": "Birke Allé", "postal_code": "7100", "city_from_page": "Vejle", "lat": 55.653, "lon": 9.402, "rent": 10411, "score": 57.8, "commute_min": 23.9, "commute_km": 23.9, "dog": false, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/vejle/101m2-3-vaer-id-5289898", "image": "https://image-lambda.boligportal.dk/51b295046df2f83fa71352e497d95742?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus - 101 m² - 10.411 kr", "type": "Rækkehus", "area": 101.0, "rooms": 3.0}, {"pendling_rank": 12, "billund_rank": "11", "city": "Jelling", "group": "Jelling", "address": "Kollegievej", "postal_code": "7300", "city_from_page": "Jelling", "lat": 55.757, "lon": 9.415, "rent": 9200, "score": 59.2, "commute_min": 27.1, "commute_km": 26.8, "dog": false, "url": "https://www.boligportal.dk/huse/jelling/96m2-4-vaer-id-5225772", "image": "https://www.boligportal.dk/static/images/no-image.jpg", "title": "Dagligt byhus udlejes. - 96 m² - 9.200 kr", "type": "Hus", "area": 96.0, "rooms": 4.0}, {"pendling_rank": 13, "billund_rank": "13", "city": "Jelling", "group": "Jelling", "address": "Havegangen", "postal_code": "7300", "city_from_page": "Jelling", "lat": 55.754, "lon": 9.433, "rent": 9295, "score": 60.7, "commute_min": 28.5, "commute_km": 27.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-3-vaer-id-5551791", "image": "https://image-lambda.boligportal.dk/7060ecc746cf7b44ae2e1fad642882ed?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Havegangen i Jelling udleje - 95 m² - 9.295 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 14, "billund_rank": "14", "city": "Jelling", "group": "Jelling", "address": "Havegangen", "postal_code": "7300", "city_from_page": "Jelling", "lat": 55.754, "lon": 9.433, "rent": 9995, "score": 60.5, "commute_min": 28.5, "commute_km": 27.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-4-vaer-id-5283314", "image": "https://image-lambda.boligportal.dk/97b2193e6cd13c2acc909e29b4ea906f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "4 værelses rækkehus på Havegangen i Jelling udleje - 95 m² - 9.995 kr", "type": "Rækkehus", "area": 95.0, "rooms": 4.0}, {"pendling_rank": 15, "billund_rank": "16", "city": "Vester Nebel/Egtved", "group": "Egtved/Vester Nebel", "address": "Søstervænget", "postal_code": "6040", "city_from_page": "Egtved", "lat": 55.558, "lon": 9.41, "rent": 11700, "score": 48.0, "commute_min": 31.8, "commute_km": 28.8, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/egtved/108m2-4-vaer-id-5620308", "image": "https://image-lambda.boligportal.dk/d4d20fed1c3740a4cec6671638d556cf?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "Nye moderne lejeboliger i skønne Vester Nebel - 108 m² - 11.700 kr", "type": "Rækkehus", "area": 108.0, "rooms": 4.0}, {"pendling_rank": 16, "billund_rank": "17", "city": "Grejs", "group": "Vejle/Grejs/Oedsted", "address": "H. C. Monrads Vej", "postal_code": "7100", "city_from_page": "Vejle", "lat": 55.764, "lon": 9.541, "rent": 9995, "score": 49.1, "commute_min": 35.3, "commute_km": 44.3, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/vejle/99m2-3-vaer-id-5274406", "image": "https://image-lambda.boligportal.dk/9a47969697764f1046dd82759e0e3d1f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på H. C. Monrads Vej i Vejle u - 99 m² - 9.995 kr", "type": "Rækkehus", "area": 99.0, "rooms": 3.0}, {"pendling_rank": 17, "billund_rank": "15", "city": "Grejs", "group": "Vejle/Grejs/Oedsted", "address": "Degnesvinget", "postal_code": "7100", "city_from_page": "Vejle", "lat": 55.764, "lon": 9.537, "rent": 9795, "score": 40.8, "commute_min": 36.1, "commute_km": 44.9, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/vejle/79m2-3-vaer-id-5555587", "image": "https://image-lambda.boligportal.dk/d4ded3c98fa4d8e12075d32c1870512c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "Lækkert dobbelthus med carport og have i skønne Gr - 79 m² - 9.795 kr", "type": "Rækkehus", "area": 79.0, "rooms": 3.0}, {"pendling_rank": 18, "billund_rank": "19", "city": "Lunderskov", "group": "Lunderskov", "address": "Majsvang", "postal_code": "6640", "city_from_page": "Lunderskov", "lat": 55.472, "lon": 9.306, "rent": 9595, "score": 32.9, "commute_min": 39.7, "commute_km": 37.7, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/lunderskov/75m2-3-vaer-id-5563023", "image": "https://image-lambda.boligportal.dk/a12569a6fd572e289bc057979d4d24d2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Majsvang i Lunderskov udlej - 75 m² - 9.000 kr", "type": "Rækkehus", "area": 75.0, "rooms": 3.0}, {"pendling_rank": 19, "billund_rank": "18", "city": "Vejen/Askov", "group": "Vejen/Askov", "address": "Lyhnes Vej", "postal_code": "6600", "city_from_page": "Vejen", "lat": 55.469, "lon": 9.105, "rent": 9500, "score": 44.8, "commute_min": 40.0, "commute_km": 36.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/vejen/95m2-3-vaer-id-5387237", "image": "https://image-lambda.boligportal.dk/59982e9554ad62ef5640d59335b5c556?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "ENERGIVENLIGE RÆKKEHUSE PÅ VEJ! - 95 m² - 9.500 kr", "type": "Rækkehus", "area": 95.0, "rooms": 3.0}, {"pendling_rank": 20, "billund_rank": "20", "city": "Kolding Nr. Bjert", "group": "Kolding", "address": "Teodorsvej", "postal_code": "6000", "city_from_page": "Kolding", "lat": 55.517, "lon": 9.532, "rent": 9895, "score": 30.4, "commute_min": 43.0, "commute_km": 44.6, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/kolding/86m2-3-vaer-id-5636828", "image": "https://image-lambda.boligportal.dk/9fce15d56227f778ef2e22dac92b6c24?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "3 værelses rækkehus på Teodorsvej i Kolding udleje - 86 m² - 9.895 kr", "type": "Rækkehus", "area": 86.0, "rooms": 3.0}, {"pendling_rank": 21, "billund_rank": "21", "city": "Vamdrup/Ødis", "group": "Vamdrup/Oedis", "address": "Krovænget", "postal_code": "6580", "city_from_page": "Vamdrup", "lat": 55.406, "lon": 9.384, "rent": 7738, "score": 25.0, "commute_min": 50.0, "commute_km": 49.8, "dog": true, "url": "https://www.boligportal.dk/r%C3%A6kkehuse/vamdrup/86m2-2-vaer-id-5411408", "image": "https://image-lambda.boligportal.dk/985e5d92a46286eb58e14c92ad0af4ea?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint", "title": "2 værelses rækkehus på Krovænget i Vamdrup udlejes - 86 m² - 7.738 kr", "type": "Rækkehus", "area": 86.0, "rooms": 2.0}];
+
+    const map = L.map('map').setView([billund.lat, billund.lon], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+    const billundMarker = L.marker([billund.lat, billund.lon]).addTo(map);
+    billundMarker.bindPopup('<b>Billund</b><br>Reference for pendling');
+
+    const markerLayer = L.layerGroup().addTo(map);
+
+    const maxCommute = document.getElementById('maxCommute');
+    const maxRent = document.getElementById('maxRent');
+    const sortBy = document.getElementById('sortBy');
+    const dogOnly = document.getElementById('dogOnly');
+    const groupChecks = document.getElementById('groupChecks');
+    const listPanel = document.getElementById('listPanel');
+
+    function selectedGroups() {
+      return Array.from(groupChecks.querySelectorAll('.groupCheck:checked')).map(x => x.value);
+    }
+
+    function filterData() {
+      const mc = Number(maxCommute.value || 9999);
+      const mr = Number(maxRent.value || 999999);
+      const dg = dogOnly.value === 'dog';
+      const groups = new Set(selectedGroups());
+
+      let data = listings.filter(x =>
+        x.lat !== null && x.lon !== null &&
+        (x.commute_min ?? 9999) <= mc &&
+        (x.rent ?? 999999) <= mr &&
+        (!dg || x.dog) &&
+        groups.has(x.group)
+      );
+
+      if (sortBy.value === 'rent') data.sort((a,b) => (a.rent ?? 999999) - (b.rent ?? 999999));
+      else if (sortBy.value === 'score') data.sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
+      else data.sort((a,b) => (a.commute_min ?? 9999) - (b.commute_min ?? 9999));
+
+      return data;
+    }
+
+    function renderMap(data) {
+      markerLayer.clearLayers();
+      data.forEach(x => {
+        const color = x.dog ? '#1f8f5f' : '#dc6b2f';
+        const marker = L.circleMarker([x.lat, x.lon], { radius: 8, color, fillColor: color, fillOpacity: 0.85, weight: 1 });
+        marker.bindPopup(`
+          <b>${x.title}</b><br>
+          ${x.address || ''}, ${x.postal_code || ''} ${x.city_from_page || x.city || ''}<br>
+          Pendling: <b>${x.commute_min ?? '-'} min</b> · Pris: <b>${x.rent ?? '-'} kr</b><br>
+          Lokation: <b>${x.group}</b><br>
+          <a href="${x.url}" target="_blank" rel="noopener noreferrer">Se annonce</a>
+        `);
+        marker.addTo(markerLayer);
+      });
+    }
+
+    function fmtMoney(v) {
+      if (v === null || v === undefined) return '-';
+      return new Intl.NumberFormat('da-DK').format(v) + ' kr';
+    }
+
+    function renderList(data) {
+      const grouped = {};
+      data.forEach(x => {
+        grouped[x.group] = grouped[x.group] || [];
+        grouped[x.group].push(x);
+      });
+
+      const groups = Object.keys(grouped).sort();
+      listPanel.innerHTML = groups.map(g => {
+        const rows = grouped[g].map(x => `
+          <div class="item">
+            <img src="${x.image || ''}" alt="" loading="lazy" />
+            <div class="meta">
+              <b>${x.city} · ${fmtMoney(x.rent)}</b>
+              <small>${x.commute_min ?? '-'} min til Billund · ${x.type || ''} · ${x.area ?? '-'} m2 · ${x.rooms ?? '-'} vaer.</small><br>
+              <a href="${x.url}" target="_blank" rel="noopener noreferrer">Aaben annonce</a>
+            </div>
+            <span class="tag ${x.dog ? 'dog' : ''}">${x.dog ? 'Hund OK' : 'Ingen hund'}</span>
+          </div>
+        `).join('');
+        return `<section class="group-block"><h3>${g} (${grouped[g].length})</h3>${rows}</section>`;
+      }).join('');
+    }
+
+    function rerender() {
+      const data = filterData();
+      renderMap(data);
+      renderList(data);
+    }
+
+    [maxCommute, maxRent, sortBy, dogOnly].forEach(el => el.addEventListener('input', rerender));
+    groupChecks.addEventListener('change', rerender);
+    rerender();
+  </script>
+</body>
+</html>
