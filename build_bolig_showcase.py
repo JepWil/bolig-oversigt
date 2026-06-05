@@ -115,7 +115,7 @@ def static_map_preview_markup(lat: float | None, lon: float | None, city_name: s
         return ""
 
     zoom = 13
-    tile_size = 128
+    tile_size = 256
     thumb_width = 126
     thumb_height = 78
     x_float, y_float, tile_count = slippy_tile_coords(lat, lon, zoom)
@@ -128,8 +128,8 @@ def static_map_preview_markup(lat: float | None, lon: float | None, city_name: s
     city_label = safe_text(city_name or "Ukendt by")[:24]
 
     tiles_html = []
-    for row in range(2):
-        for col in range(2):
+    for row in range(3):
+        for col in range(3):
             tile_x = int((base_x + col) % tile_count)
             tile_y = int(min(max(base_y + row, 0), tile_count - 1))
             tiles_html.append(
@@ -294,9 +294,9 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
     .rank,.distance {{ position:relative; z-index:1; align-self:flex-start; display:inline-flex; align-items:center; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; line-height:1.15; white-space:nowrap; }}
-    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; overflow:hidden; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#dfe8e2; }}
-    .mapThumbTiles {{ position:absolute; inset:0 auto auto 0; width:256px; height:256px; }}
-    .mapThumbTiles img {{ position:absolute; width:128px; height:128px; image-rendering:auto; }}
+    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; overflow:hidden; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#e7ece8; }}
+    .mapThumbTiles {{ position:absolute; inset:0 auto auto 0; width:768px; height:768px; }}
+    .mapThumbTiles img {{ position:absolute; width:256px; height:256px; display:block; image-rendering:auto; }}
     .mapThumbShade {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(7,16,14,.06),rgba(7,16,14,.20)); pointer-events:none; }}
     .mapThumbPin {{ position:absolute; left:50%; top:50%; width:18px; height:18px; transform:translate(-50%,-82%) rotate(-45deg); background:#d64545; border:2px solid #fff; border-radius:50% 50% 50% 0; box-shadow:0 3px 8px rgba(0,0,0,.26); }}
     .mapThumbPin::after {{ content:''; position:absolute; width:6px; height:6px; left:4px; top:4px; border-radius:50%; background:#fff; }}
