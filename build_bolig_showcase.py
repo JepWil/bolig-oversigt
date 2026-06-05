@@ -8,7 +8,6 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
@@ -103,39 +102,50 @@ def format_float(value: Any, suffix: str = "") -> str:
         return "-"
 
 
-def static_map_preview_data_uri(lat: float | None, lon: float | None, city_name: str) -> str | None:
-    if lat is None or lon is None:
-        return None
-    width = 252
-    height = 156
-    city_label = safe_text(city_name or "Ukendt by")[:24]
-    seed_x = abs(math.sin(lat * 7.13 + lon * 3.71))
-    seed_y = abs(math.cos(lat * 5.21 - lon * 2.93))
-    pin_x = 62 + seed_x * 128
-    pin_y = 62 + seed_y * 44
+def slippy_tile_coords(lat: float, lon: float, zoom: int) -> tuple[float, float, int]:
+    lat_rad = math.radians(lat)
+    tiles = 2**zoom
+    x = (lon + 180.0) / 360.0 * tiles
+    y = (1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * tiles
+    return x, y, tiles
 
-    svg = f"""
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {width} {height}'>
-    <defs>
-        <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
-            <stop offset='0%' stop-color='#edf6f1'/>
-            <stop offset='100%' stop-color='#dceae2'/>
-        </linearGradient>
-    </defs>
-    <rect width='{width}' height='{height}' rx='18' fill='url(#bg)'/>
-    <path d='M14 118 C48 100, 78 134, 116 118 S182 90, 238 104' fill='none' stroke='#b7cdc0' stroke-width='8' stroke-linecap='round' opacity='0.95'/>
-    <path d='M26 42 C78 58, 112 22, 156 36 S212 76, 232 66' fill='none' stroke='#cadbd0' stroke-width='6' stroke-linecap='round' opacity='0.8'/>
-    <path d='M36 136 L76 96 L122 112 L174 74 L224 90' fill='none' stroke='#a9c1b5' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' opacity='0.55'/>
-    <rect x='12' y='12' width='110' height='28' rx='14' fill='rgba(255,255,255,0.82)'/>
-    <text x='22' y='30' font-family='Space Grotesk, Arial, sans-serif' font-size='12' font-weight='700' fill='#18312a'>Kort preview</text>
-    <path d='M{pin_x:.1f} {pin_y:.1f} c0 -10 8 -18 18 -18 s18 8 18 18 c0 13 -18 31 -18 31 s-18 -18 -18 -31z' fill='#d64545'/>
-    <circle cx='{pin_x + 18:.1f}' cy='{pin_y + 0.5:.1f}' r='7' fill='white'/>
-    <circle cx='{pin_x + 18:.1f}' cy='{pin_y + 0.5:.1f}' r='3' fill='#d64545'/>
-    <rect x='18' y='116' width='132' height='24' rx='12' fill='rgba(21,33,31,0.74)'/>
-    <text x='30' y='132' font-family='Space Grotesk, Arial, sans-serif' font-size='12' font-weight='700' fill='white'>{city_label}</text>
-</svg>
-""".strip()
-    return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
+
+def static_map_preview_markup(lat: float | None, lon: float | None, city_name: str) -> str:
+    if lat is None or lon is None:
+        return ""
+
+    zoom = 13
+    tile_size = 128
+    thumb_width = 126
+    thumb_height = 78
+    x_float, y_float, tile_count = slippy_tile_coords(lat, lon, zoom)
+    base_x = math.floor(x_float) - 1
+    base_y = math.floor(y_float) - 1
+    point_x = (x_float - base_x) * tile_size
+    point_y = (y_float - base_y) * tile_size
+    offset_x = (thumb_width / 2) - point_x
+    offset_y = (thumb_height / 2) - point_y
+    city_label = safe_text(city_name or "Ukendt by")[:24]
+
+    tiles_html = []
+    for row in range(2):
+        for col in range(2):
+            tile_x = int((base_x + col) % tile_count)
+            tile_y = int(min(max(base_y + row, 0), tile_count - 1))
+            tiles_html.append(
+                f'<img src="https://tile.openstreetmap.org/{zoom}/{tile_x}/{tile_y}.png" '
+                f'alt="" loading="lazy" referrerpolicy="no-referrer" '
+                f'style="left:{col * tile_size}px;top:{row * tile_size}px;" />'
+            )
+
+    return (
+        '<div class="mapThumb" aria-hidden="true">'
+        f'<div class="mapThumbTiles" style="transform:translate({offset_x:.1f}px,{offset_y:.1f}px)">{"".join(tiles_html)}</div>'
+        '<div class="mapThumbShade"></div>'
+        '<div class="mapThumbPin"></div>'
+        f'<div class="mapThumbLabel">{city_label}</div>'
+        '</div>'
+    )
 
 
 def fetch_card_media(url: str) -> dict[str, str | None]:
@@ -228,12 +238,7 @@ def card_markup(row: dict[str, Any]) -> str:
         image = row.get("image_url") or "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&w=1200&q=80"
         lat = to_float(row.get("lat"))
         lon = to_float(row.get("lon"))
-        map_preview = static_map_preview_data_uri(lat, lon, row.get("city_from_page") or row.get("By") or "")
-        map_thumb_html = ""
-        if map_preview:
-            map_thumb_html = (
-                f'<img class="mapThumb" src="{safe_text(map_preview)}" alt="Kort preview" loading="lazy" />'
-            )
+        map_thumb_html = static_map_preview_markup(lat, lon, row.get("city_from_page") or row.get("By") or "")
 
         title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
         desc = row.get("card_description") or row.get("Kommentar") or ""
@@ -289,7 +294,13 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
     .rank,.distance {{ position:relative; z-index:1; align-self:flex-start; display:inline-flex; align-items:center; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; line-height:1.15; white-space:nowrap; }}
-    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; object-fit:cover; object-position:center; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
+    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; overflow:hidden; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#dfe8e2; }}
+    .mapThumbTiles {{ position:absolute; inset:0 auto auto 0; width:256px; height:256px; }}
+    .mapThumbTiles img {{ position:absolute; width:128px; height:128px; image-rendering:auto; }}
+    .mapThumbShade {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(7,16,14,.06),rgba(7,16,14,.20)); pointer-events:none; }}
+    .mapThumbPin {{ position:absolute; left:50%; top:50%; width:18px; height:18px; transform:translate(-50%,-82%) rotate(-45deg); background:#d64545; border:2px solid #fff; border-radius:50% 50% 50% 0; box-shadow:0 3px 8px rgba(0,0,0,.26); }}
+    .mapThumbPin::after {{ content:''; position:absolute; width:6px; height:6px; left:4px; top:4px; border-radius:50%; background:#fff; }}
+    .mapThumbLabel {{ position:absolute; left:8px; bottom:7px; max-width:calc(100% - 16px); padding:3px 8px; border-radius:999px; background:rgba(21,33,31,.74); color:#fff; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
     .content {{ padding:12px; }}
     .content h3 {{ margin:0 0 6px; font-size:18px; }}
     .meta,.desc {{ margin:0 0 8px; color:#4f5f56; font-size:13px; }}
