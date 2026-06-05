@@ -272,14 +272,16 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
     .rank,.distance {{ position:relative; z-index:1; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; }}
-    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:108px; height:62px; object-fit:cover; border-radius:10px; border:2px solid rgba(255,255,255,.9); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
+    .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:108px; height:62px; object-fit:cover; border-radius:999px; clip-path:ellipse(49% 46% at 50% 50%); border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#f0f3ef; }}
     .content {{ padding:12px; }}
     .content h3 {{ margin:0 0 6px; font-size:18px; }}
     .meta,.desc {{ margin:0 0 8px; color:#4f5f56; font-size:13px; }}
     .chips {{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }}
     .chips span {{ background:var(--soft); border-radius:999px; padding:3px 8px; font-size:11px; }}
     .stats,.score {{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px; }}
-    .stats div,.score div {{ border:1px solid var(--line); border-radius:10px; padding:6px; background:#fbfefb; }}
+    .stats div,.score div {{ border:1px solid var(--line); border-radius:10px; padding:7px 8px; background:#fbfefb; }}
+    .stats small,.score small {{ display:block; margin:0 0 3px; color:#5c6b63; line-height:1.25; }}
+    .stats strong,.score strong {{ display:block; line-height:1.3; letter-spacing:.01em; }}
     .actions a {{ display:inline-block; text-decoration:none; background:linear-gradient(135deg,var(--accent),#0f9271); color:#fff; border-radius:10px; padding:7px 10px; font-weight:700; font-size:13px; }}
     body.light-mode .desc, body.light-mode .stats, body.light-mode .score {{ display:none; }}
     body.light-mode .hero {{ height:190px; }}
