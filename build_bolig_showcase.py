@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import json
 import math
 import re
 import shutil
@@ -17,6 +18,8 @@ OUTPUT_CSV = Path("Jeppe_Bolig_Masterliste_BillundPrioritet.csv")
 OUTPUT_HTML = Path("Bolig_oversigt_modern.html")
 OUTPUT_LIGHT_HTML = Path("Bolig_oversigt_light.html")
 WEB_DIR = Path("web")
+SEEN_STATE_FILE = Path(".listing_seen_state.json")
+NEW_BADGE_DAYS = 7
 
 BILLUND_LAT = 55.7308
 BILLUND_LON = 9.1153
@@ -100,6 +103,57 @@ def format_float(value: Any, suffix: str = "") -> str:
         return f"{num:.1f}{suffix}"
     except (TypeError, ValueError):
         return "-"
+
+
+def listing_key(row: dict[str, Any]) -> str:
+    url = (row.get("canonical_url") or row.get("URL") or "").strip()
+    if url:
+        return f"url:{url.lower()}"
+    addr = " ".join(
+        str(row.get(k) or "").strip().lower()
+        for k in ("address", "postal_code", "city_from_page", "By")
+    )
+    rent = str(to_int(row.get("Mdl. leje") or row.get("monthly_rent_from_page_dkk")) or "")
+    return f"fallback:{addr}|{rent}"
+
+
+def load_seen_state(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k): str(v) for k, v in raw.items()}
+
+
+def save_seen_state(state: dict[str, str], path: Path) -> None:
+    path.write_text(json.dumps(state, ensure_ascii=True, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def apply_new_listing_flags(rows: list[dict[str, Any]], days_as_new: int = NEW_BADGE_DAYS) -> None:
+    seen_state = load_seen_state(SEEN_STATE_FILE)
+    today = dt.date.today()
+    first_baseline_run = len(seen_state) == 0
+
+    for row in rows:
+        key = listing_key(row)
+        first_seen_txt = seen_state.get(key)
+        if first_seen_txt is None:
+            seen_state[key] = today.isoformat()
+            row["is_new"] = not first_baseline_run
+            continue
+
+        try:
+            first_seen = dt.date.fromisoformat(first_seen_txt)
+        except ValueError:
+            first_seen = today
+            seen_state[key] = today.isoformat()
+        row["is_new"] = (today - first_seen).days < days_as_new
+
+    save_seen_state(seen_state, SEEN_STATE_FILE)
 
 
 def slippy_tile_coords(lat: float, lon: float, zoom: int) -> tuple[float, float, int]:
@@ -239,12 +293,13 @@ def card_markup(row: dict[str, Any]) -> str:
         lat = to_float(row.get("lat"))
         lon = to_float(row.get("lon"))
         map_thumb_html = static_map_preview_markup(lat, lon, row.get("city_from_page") or row.get("By") or "")
+        new_badge = '<div class="newBadge">Ny tilfojelse!</div>' if row.get("is_new") else ""
 
         title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
         desc = row.get("card_description") or row.get("Kommentar") or ""
         return f"""
         <article class=\"card{' dog-friendly' if row.get('dog_friendly') else ''}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-rooms=\"{to_int(row.get('rooms_from_page')) or to_int(row.get('Vær.')) or 0}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\" data-score=\"{to_float(row.get('billund_priority_score_0_100')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\">
-            <div class=\"hero\" style=\"background-image:url('{safe_text(image)}')\"><div class=\"overlay\"></div><div class=\"rank\">#{row.get('billund_rank')}</div><div class=\"distance\">{format_float(row.get('distance_to_billund_km'), ' km')} til Billund</div>{map_thumb_html}</div>
+            <div class=\"hero\" style=\"background-image:url('{safe_text(image)}')\"><div class=\"overlay\"></div>{new_badge}<div class=\"rank\">#{row.get('billund_rank')}</div><div class=\"distance\">{format_float(row.get('distance_to_billund_km'), ' km')} til Billund</div>{map_thumb_html}</div>
             <div class=\"content\">
                 <h3>{safe_text(title)}</h3>
                 <p class=\"meta\">{safe_text(row.get('address'))}, {safe_text(row.get('postal_code'))} {safe_text(row.get('city_from_page') or row.get('By'))}</p>
@@ -294,6 +349,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .hero {{ height:170px; background-size:cover; background-position:center; position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:10px; }}
     .overlay {{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.46)); }}
     .rank,.distance {{ position:relative; z-index:1; align-self:flex-start; display:inline-flex; align-items:center; background:rgba(21,33,31,.55); color:#fff; border-radius:999px; padding:5px 9px; font-size:12px; font-weight:700; line-height:1.15; white-space:nowrap; }}
+    .newBadge {{ position:absolute; left:10px; bottom:10px; z-index:2; background:#ffcc34; color:#352700; font-weight:800; font-size:11px; letter-spacing:.02em; border-radius:999px; padding:4px 9px; box-shadow:0 3px 10px rgba(0,0,0,.22); }}
     .mapThumb {{ position:absolute; right:10px; bottom:10px; z-index:1; width:126px; height:78px; overflow:hidden; border-radius:16px; border:2px solid rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(0,0,0,.24); background:#e7ece8; }}
     .mapThumbTiles {{ position:absolute; inset:0 auto auto 0; width:768px; height:768px; }}
     .mapThumbTiles img {{ position:absolute; width:256px; height:256px; display:block; image-rendering:auto; }}
@@ -437,13 +493,14 @@ def create_light_html(rows: list[dict[str, Any]], path: Path) -> None:
             f"""
             <a class=\"tile{' dog' if row.get('dog_friendly') else ''}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\" href=\"{safe_text(row.get('canonical_url') or row.get('URL') or '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">
               <img src=\"{safe_text(image)}\" alt=\"\" loading=\"lazy\" /><div class=\"veil\"></div>
+                            {'<div class="new">Ny tilfojelse!</div>' if row.get('is_new') else ''}
               <div class=\"txt\"><small>#{row.get('billund_rank')} · {format_float(row.get('distance_to_billund_km'), ' km')}</small><h3>{safe_text(row.get('By'))} · {format_currency(row.get('Mdl. leje'))}</h3><p>{'Hund OK' if row.get('dog_friendly') else 'Ingen hund'}</p></div>
             </a>
             """
         )
 
     html = f"""<!doctype html><html lang=\"da\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><title>Light</title>
-    <style>body{{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}}.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}.tile{{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}}img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}}.veil{{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}}.txt{{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}}.dog{{outline:3px solid #78c998}}</style></head><body><div class=\"grid\">{''.join(cards)}</div></body></html>"""
+    <style>body{{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}}.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}.tile{{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}}img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}}.veil{{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}}.txt{{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}}.new{{position:absolute;left:10px;top:10px;z-index:1;background:#ffcc34;color:#352700;border-radius:999px;padding:4px 8px;font-weight:800;font-size:11px}}.dog{{outline:3px solid #78c998}}</style></head><body><div class=\"grid\">{''.join(cards)}</div></body></html>"""
     path.write_text(html, encoding="utf-8")
 
 
@@ -457,6 +514,7 @@ def create_web_bundle() -> None:
 def main() -> None:
     rows = read_csv_with_fallback(INPUT_FILE)
     rows = build_scores(rows)
+    apply_new_listing_flags(rows)
     enrich_media(rows)
     write_csv(rows, OUTPUT_CSV)
     create_modern_html(rows, OUTPUT_HTML)
