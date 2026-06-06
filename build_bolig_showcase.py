@@ -393,7 +393,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
             <button id="filterToggle" class="filterToggle">Vis filtre og sortering</button>
             <button id="shortlistToggle">Vis kun valgte</button>
             <button id="shortlistShare">Del valgte</button>
-                <button id="shortlistClear">Slet valgte</button>
+                <button id="shortlistClear">Slet alle valgte</button>
             <span id="shortlistCount" class="shortlistMeta">0 valgte</span>
     </section>
 
@@ -468,7 +468,7 @@ function refreshShortlistUI() {{
         const btn = card.querySelector('.favBtn');
         if (btn) {{
             btn.classList.toggle('active', isOn);
-            btn.textContent = isOn ? 'Valgt' : 'Gem';
+            btn.textContent = isOn ? 'Fjern' : 'Gem';
         }}
     }});
     shortlistCount.textContent = `${{shortlist.size}} valgte`;
@@ -582,18 +582,132 @@ def create_light_html(rows: list[dict[str, Any]], path: Path) -> None:
     cards = []
     for row in rows:
         image = row.get("image_url") or "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80"
+        card_key = safe_text(row.get("listing_id") or listing_key(row))
         cards.append(
             f"""
-            <a class=\"tile{' dog' if row.get('dog_friendly') else ''}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\" href=\"{safe_text(row.get('canonical_url') or row.get('URL') or '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">
-              <img src=\"{safe_text(image)}\" alt=\"\" loading=\"lazy\" /><div class=\"veil\"></div>
-                            {'<div class="new">Ny tilfojelse!</div>' if row.get('is_new') else ''}
-              <div class=\"txt\"><small>#{row.get('billund_rank')} · {format_float(row.get('distance_to_billund_km'), ' km')}</small><h3>{safe_text(row.get('By'))} · {format_currency(row.get('Mdl. leje'))}</h3><p>{'Hund OK' if row.get('dog_friendly') else 'Ingen hund'}</p></div>
-            </a>
+                        <article class=\"tile{' dog' if row.get('dog_friendly') else ''}\" data-key=\"{card_key}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\">
+                            <a class=\"tileLink\" href=\"{safe_text(row.get('canonical_url') or row.get('URL') or '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">
+                                <img src=\"{safe_text(image)}\" alt=\"\" loading=\"lazy\" /><div class=\"veil\"></div>
+                                {'<div class="new">Ny tilfojelse!</div>' if row.get('is_new') else ''}
+                                <div class=\"txt\"><small>#{row.get('billund_rank')} · {format_float(row.get('distance_to_billund_km'), ' km')}</small><h3>{safe_text(row.get('By'))} · {format_currency(row.get('Mdl. leje'))}</h3><p>{'Hund OK' if row.get('dog_friendly') else 'Ingen hund'}</p></div>
+                            </a>
+                            <button class=\"miniFavBtn\" type=\"button\" data-key=\"{card_key}\">Gem</button>
+                        </article>
             """
         )
 
-    html = f"""<!doctype html><html lang=\"da\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><title>Light</title>
-    <style>body{{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}}.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}.tile{{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}}img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}}.veil{{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}}.txt{{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}}.new{{position:absolute;left:10px;top:10px;z-index:1;background:#ffcc34;color:#352700;border-radius:999px;padding:4px 8px;font-weight:800;font-size:11px}}.dog{{outline:3px solid #78c998}}</style></head><body><div class=\"grid\">{''.join(cards)}</div></body></html>"""
+        html = f"""<!doctype html><html lang=\"da\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><title>Light</title>
+        <style>
+        body{{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}}
+        .toolbar{{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}}
+        .toolbar button{{border:1px solid #cfd9d2;background:#fff;border-radius:999px;padding:8px 12px;font:inherit;cursor:pointer}}
+        .meta{{font-size:12px;color:#3f5951;padding:0 4px}}
+        .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}
+        .tile{{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}}
+        .tile.selected{{outline:3px solid #efc654}}
+        .tileLink{{display:block;position:absolute;inset:0;color:#fff;text-decoration:none}}
+        img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}}
+        .veil{{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}}
+        .txt{{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}}
+        .new{{position:absolute;left:10px;top:10px;z-index:1;background:#ffcc34;color:#352700;border-radius:999px;padding:4px 8px;font-weight:800;font-size:11px}}
+        .dog{{outline:3px solid #78c998}}
+        .miniFavBtn{{position:absolute;right:10px;top:10px;z-index:2;border:1px solid #cfb262;background:#fff7dc;color:#5b4610;border-radius:999px;padding:5px 9px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}}
+        .miniFavBtn.active{{background:#f3c94a;border-color:#d3a92f;color:#2b2207}}
+        </style></head><body>
+        <div class=\"toolbar\">
+            <button id=\"shortlistToggle\">Vis kun valgte</button>
+            <button id=\"shortlistShare\">Del valgte</button>
+            <button id=\"shortlistClear\">Slet alle valgte</button>
+            <span id=\"shortlistCount\" class=\"meta\">0 valgte</span>
+        </div>
+        <div class=\"grid\" id=\"grid\">{''.join(cards)}</div>
+        <script>
+        const grid = document.getElementById('grid');
+        const shortlistToggle = document.getElementById('shortlistToggle');
+        const shortlistShare = document.getElementById('shortlistShare');
+        const shortlistClear = document.getElementById('shortlistClear');
+        const shortlistCount = document.getElementById('shortlistCount');
+        const shortlistStorageKey = 'bolig-shortlist-v1';
+        let showOnlyShortlist = false;
+        let shortlist = new Set();
+
+        try {{
+            const raw = localStorage.getItem(shortlistStorageKey);
+            if (raw) shortlist = new Set(JSON.parse(raw));
+        }} catch (_) {{
+            shortlist = new Set();
+        }}
+
+        const sharedShortlist = new URLSearchParams(window.location.search).get('shortlist');
+        if (sharedShortlist) {{
+            const fromLink = new Set();
+            sharedShortlist.split(',').forEach((id) => {{
+                const clean = decodeURIComponent(id || '').trim();
+                if (clean) fromLink.add(clean);
+            }});
+            if (fromLink.size) {{
+                shortlist = fromLink;
+                showOnlyShortlist = true;
+                persistShortlist();
+            }}
+        }}
+
+        function persistShortlist() {{
+            localStorage.setItem(shortlistStorageKey, JSON.stringify(Array.from(shortlist)));
+        }}
+
+        function refreshUI() {{
+            Array.from(grid.querySelectorAll('.tile')).forEach((tile) => {{
+                const key = tile.dataset.key;
+                const isOn = shortlist.has(key);
+                tile.classList.toggle('selected', isOn);
+                tile.style.display = !showOnlyShortlist || isOn ? 'block' : 'none';
+                const btn = tile.querySelector('.miniFavBtn');
+                if (btn) {{
+                    btn.classList.toggle('active', isOn);
+                    btn.textContent = isOn ? 'Fjern' : 'Gem';
+                }}
+            }});
+            shortlistCount.textContent = `${{shortlist.size}} valgte`;
+            shortlistToggle.textContent = showOnlyShortlist ? 'Vis alle' : 'Vis kun valgte';
+        }}
+
+        grid.addEventListener('click', (evt) => {{
+            const btn = evt.target.closest('.miniFavBtn');
+            if (!btn) return;
+            const key = btn.dataset.key;
+            if (!key) return;
+            if (shortlist.has(key)) shortlist.delete(key); else shortlist.add(key);
+            persistShortlist();
+            refreshUI();
+        }});
+
+        shortlistToggle.addEventListener('click', () => {{
+            showOnlyShortlist = !showOnlyShortlist;
+            refreshUI();
+        }});
+
+        shortlistShare.addEventListener('click', async () => {{
+            const selected = encodeURIComponent(Array.from(shortlist).join(','));
+            const url = `${{window.location.origin}}${{window.location.pathname}}?shortlist=${{selected}}`;
+            try {{
+                await navigator.clipboard.writeText(url);
+                shortlistShare.textContent = 'Link kopieret';
+                setTimeout(() => shortlistShare.textContent = 'Del valgte', 1400);
+            }} catch (_) {{
+                window.prompt('Kopiér linket:', url);
+            }}
+        }});
+
+        shortlistClear.addEventListener('click', () => {{
+            shortlist.clear();
+            showOnlyShortlist = false;
+            persistShortlist();
+            refreshUI();
+        }});
+
+        refreshUI();
+        </script></body></html>"""
     path.write_text(html, encoding="utf-8")
 
 

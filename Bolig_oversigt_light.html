@@ -1,152 +1,337 @@
 <!doctype html><html lang="da"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Light</title>
-    <style>body{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.tile{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}.txt{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}.new{position:absolute;left:10px;top:10px;z-index:1;background:#ffcc34;color:#352700;border-radius:999px;padding:4px 8px;font-weight:800;font-size:11px}.dog{outline:3px solid #78c998}</style></head><body><div class="grid">
-            <a class="tile dog" data-rent="9995" data-dog="yes" data-distance="1.5" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/95m2-3-vaer-id-5442903" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/4d0b25702dd0b67d81eb888f5e0164d9?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#1 · 1.5 km</small><h3>Billund · 9.995 kr</h3><p>Hund OK</p></div>
-            </a>
+        <style>
+        body{font-family:Arial,sans-serif;margin:0;padding:14px;background:#f3f7f8}
+        .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+        .toolbar button{border:1px solid #cfd9d2;background:#fff;border-radius:999px;padding:8px 12px;font:inherit;cursor:pointer}
+        .meta{font-size:12px;color:#3f5951;padding:0 4px}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+        .tile{display:block;position:relative;min-height:220px;color:#fff;text-decoration:none;border-radius:12px;overflow:hidden}
+        .tile.selected{outline:3px solid #efc654}
+        .tileLink{display:block;position:absolute;inset:0;color:#fff;text-decoration:none}
+        img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+        .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.75))}
+        .txt{position:absolute;left:10px;right:10px;bottom:10px;z-index:1}
+        .new{position:absolute;left:10px;top:10px;z-index:1;background:#ffcc34;color:#352700;border-radius:999px;padding:4px 8px;font-weight:800;font-size:11px}
+        .dog{outline:3px solid #78c998}
+        .miniFavBtn{position:absolute;right:10px;top:10px;z-index:2;border:1px solid #cfb262;background:#fff7dc;color:#5b4610;border-radius:999px;padding:5px 9px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+        .miniFavBtn.active{background:#f3c94a;border-color:#d3a92f;color:#2b2207}
+        </style></head><body>
+        <div class="toolbar">
+            <button id="shortlistToggle">Vis kun valgte</button>
+            <button id="shortlistShare">Del valgte</button>
+            <button id="shortlistClear">Slet alle valgte</button>
+            <span id="shortlistCount" class="meta">0 valgte</span>
+        </div>
+        <div class="grid" id="grid">
+                        <article class="tile dog" data-key="5442903" data-rent="9995" data-dog="yes" data-distance="1.5">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/95m2-3-vaer-id-5442903" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/4d0b25702dd0b67d81eb888f5e0164d9?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#1 · 1.5 km</small><h3>Billund · 9.995 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5442903">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9795" data-dog="yes" data-distance="1.6" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/91m2-3-vaer-id-5472558" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/94deaf704645fd7a1fccb99ddd080528?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#2 · 1.6 km</small><h3>Billund · 9.795 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5472558" data-rent="9795" data-dog="yes" data-distance="1.6">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/91m2-3-vaer-id-5472558" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/94deaf704645fd7a1fccb99ddd080528?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#2 · 1.6 km</small><h3>Billund · 9.795 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5472558">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9995" data-dog="yes" data-distance="1.7" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/98m2-4-vaer-id-5431909" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/ec64ad956d75c75e658837fae0942021?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#3 · 1.7 km</small><h3>Billund · 9.995 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5431909" data-rent="9995" data-dog="yes" data-distance="1.7">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/billund/98m2-4-vaer-id-5431909" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/ec64ad956d75c75e658837fae0942021?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#3 · 1.7 km</small><h3>Billund · 9.995 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5431909">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9999" data-dog="yes" data-distance="12.7" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5598029" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/e8ce1ac1679cb4902d1d17ad1f97b57f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#4 · 12.7 km</small><h3>Give · 9.999 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5598029" data-rent="9999" data-dog="yes" data-distance="12.7">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5598029" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/e8ce1ac1679cb4902d1d17ad1f97b57f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#4 · 12.7 km</small><h3>Give · 9.999 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5598029">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9745" data-dog="yes" data-distance="12.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598027" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/1d5ecc94553d5eda70c42bb361673283?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#5 · 12.9 km</small><h3>Give (Pigernes Kvarter) · 9.745 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5598027" data-rent="9745" data-dog="yes" data-distance="12.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598027" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/1d5ecc94553d5eda70c42bb361673283?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#5 · 12.9 km</small><h3>Give (Pigernes Kvarter) · 9.745 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5598027">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9917" data-dog="yes" data-distance="12.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598025" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/ec4f5fb8dcc60441747749fad530027d?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#6 · 12.9 km</small><h3>Give (Pigernes Kvarter) · 9.917 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5598025" data-rent="9917" data-dog="yes" data-distance="12.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-4-vaer-id-5598025" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/ec4f5fb8dcc60441747749fad530027d?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#6 · 12.9 km</small><h3>Give (Pigernes Kvarter) · 9.917 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5598025">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9595" data-dog="yes" data-distance="12.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5532006" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/08c08e3a16c2337859da338c9a630a8c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#7 · 12.9 km</small><h3>Give · 9.595 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5532006" data-rent="9595" data-dog="yes" data-distance="12.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/95m2-3-vaer-id-5532006" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/08c08e3a16c2337859da338c9a630a8c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#7 · 12.9 km</small><h3>Give · 9.595 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5532006">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9099" data-dog="yes" data-distance="12.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/85m2-3-vaer-id-5604793" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/6b7eac2a56df4f35ab399fe2ef803fd8?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#8 · 12.9 km</small><h3>Give · 9.099 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5604793" data-rent="9099" data-dog="yes" data-distance="12.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/give/85m2-3-vaer-id-5604793" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/6b7eac2a56df4f35ab399fe2ef803fd8?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#8 · 12.9 km</small><h3>Give · 9.099 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5604793">Gem</button>
+                        </article>
             
-            <a class="tile" data-rent="9027" data-dog="no" data-distance="13.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/gadbjerg/107m2-4-vaer-id-5260371" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/c23e69d12b4b03a397a72f533deb0596?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#9 · 13.9 km</small><h3>Gadbjerg · 9.027 kr</h3><p>Ingen hund</p></div>
-            </a>
+                        <article class="tile" data-key="5260371" data-rent="9027" data-dog="no" data-distance="13.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/gadbjerg/107m2-4-vaer-id-5260371" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/c23e69d12b4b03a397a72f533deb0596?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#9 · 13.9 km</small><h3>Gadbjerg · 9.027 kr</h3><p>Ingen hund</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5260371">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9995" data-dog="yes" data-distance="17.4" href="https://www.boligportal.dk/r%C3%A6kkehuse/bredsten/95m2-3-vaer-id-5638046" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/78c604bb2bc6eced73ec84a2af1d64b2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#10 · 17.4 km</small><h3>Bredsten · 9.995 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5638046" data-rent="9995" data-dog="yes" data-distance="17.4">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/bredsten/95m2-3-vaer-id-5638046" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/78c604bb2bc6eced73ec84a2af1d64b2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#10 · 17.4 km</small><h3>Bredsten · 9.995 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5638046">Gem</button>
+                        </article>
             
-            <a class="tile" data-rent="9200" data-dog="no" data-distance="19.0" href="https://www.boligportal.dk/huse/jelling/96m2-4-vaer-id-5225772" target="_blank" rel="noopener noreferrer">
-              <img src="https://www.boligportal.dk/static/images/no-image.jpg" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#11 · 19.0 km</small><h3>Jelling · 9.200 kr</h3><p>Ingen hund</p></div>
-            </a>
+                        <article class="tile" data-key="5225772" data-rent="9200" data-dog="no" data-distance="19.0">
+                            <a class="tileLink" href="https://www.boligportal.dk/huse/jelling/96m2-4-vaer-id-5225772" target="_blank" rel="noopener noreferrer">
+                                <img src="https://www.boligportal.dk/static/images/no-image.jpg" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#11 · 19.0 km</small><h3>Jelling · 9.200 kr</h3><p>Ingen hund</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5225772">Gem</button>
+                        </article>
             
-            <a class="tile" data-rent="10411" data-dog="no" data-distance="19.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/101m2-3-vaer-id-5289898" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/51b295046df2f83fa71352e497d95742?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#12 · 19.9 km</small><h3>ï¿½dsted · 10.411 kr</h3><p>Ingen hund</p></div>
-            </a>
+                        <article class="tile" data-key="5289898" data-rent="10411" data-dog="no" data-distance="19.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/101m2-3-vaer-id-5289898" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/51b295046df2f83fa71352e497d95742?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#12 · 19.9 km</small><h3>ï¿½dsted · 10.411 kr</h3><p>Ingen hund</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5289898">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9295" data-dog="yes" data-distance="20.1" href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-3-vaer-id-5551791" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/7060ecc746cf7b44ae2e1fad642882ed?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#13 · 20.1 km</small><h3>Jelling · 9.295 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5551791" data-rent="9295" data-dog="yes" data-distance="20.1">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-3-vaer-id-5551791" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/7060ecc746cf7b44ae2e1fad642882ed?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#13 · 20.1 km</small><h3>Jelling · 9.295 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5551791">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9995" data-dog="yes" data-distance="20.1" href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-4-vaer-id-5283314" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/97b2193e6cd13c2acc909e29b4ea906f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#14 · 20.1 km</small><h3>Jelling · 9.995 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5283314" data-rent="9995" data-dog="yes" data-distance="20.1">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/jelling/95m2-4-vaer-id-5283314" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/97b2193e6cd13c2acc909e29b4ea906f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#14 · 20.1 km</small><h3>Jelling · 9.995 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5283314">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="10395" data-dog="yes" data-distance="25.7" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/91m2-3-vaer-id-5635680" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/8c08bbb20972416dd4eefd593a0105cb?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#15 · 25.7 km</small><h3>Vejle · 10.395 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5635680" data-rent="10395" data-dog="yes" data-distance="25.7">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/91m2-3-vaer-id-5635680" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/8c08bbb20972416dd4eefd593a0105cb?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#15 · 25.7 km</small><h3>Vejle · 10.395 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5635680">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9495" data-dog="yes" data-distance="25.7" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/78m2-3-vaer-id-5635678" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/bda8e51953fbc9ea021600795608b84a?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#16 · 25.7 km</small><h3>Vejle · 9.495 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5635678" data-rent="9495" data-dog="yes" data-distance="25.7">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/78m2-3-vaer-id-5635678" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/bda8e51953fbc9ea021600795608b84a?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#16 · 25.7 km</small><h3>Vejle · 9.495 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5635678">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9795" data-dog="yes" data-distance="26.6" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/79m2-3-vaer-id-5555587" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/d4ded3c98fa4d8e12075d32c1870512c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#17 · 26.6 km</small><h3>Grejs · 9.795 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5555587" data-rent="9795" data-dog="yes" data-distance="26.6">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/79m2-3-vaer-id-5555587" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/d4ded3c98fa4d8e12075d32c1870512c?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#17 · 26.6 km</small><h3>Grejs · 9.795 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5555587">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="11700" data-dog="yes" data-distance="26.7" href="https://www.boligportal.dk/r%C3%A6kkehuse/egtved/108m2-4-vaer-id-5620308" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/d4d20fed1c3740a4cec6671638d556cf?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#18 · 26.7 km</small><h3>Vester Nebel/Egtved · 11.700 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5620308" data-rent="11700" data-dog="yes" data-distance="26.7">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/egtved/108m2-4-vaer-id-5620308" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/d4d20fed1c3740a4cec6671638d556cf?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#18 · 26.7 km</small><h3>Vester Nebel/Egtved · 11.700 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5620308">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9995" data-dog="yes" data-distance="26.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/99m2-3-vaer-id-5274406" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/9a47969697764f1046dd82759e0e3d1f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#19 · 26.9 km</small><h3>Grejs · 9.995 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5274406" data-rent="9995" data-dog="yes" data-distance="26.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejle/99m2-3-vaer-id-5274406" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/9a47969697764f1046dd82759e0e3d1f?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#19 · 26.9 km</small><h3>Grejs · 9.995 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5274406">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9500" data-dog="yes" data-distance="29.1" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejen/95m2-3-vaer-id-5387237" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/59982e9554ad62ef5640d59335b5c556?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#20 · 29.1 km</small><h3>Vejen/Askov · 9.500 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5387237" data-rent="9500" data-dog="yes" data-distance="29.1">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vejen/95m2-3-vaer-id-5387237" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/59982e9554ad62ef5640d59335b5c556?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#20 · 29.1 km</small><h3>Vejen/Askov · 9.500 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5387237">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9595" data-dog="yes" data-distance="31.2" href="https://www.boligportal.dk/r%C3%A6kkehuse/lunderskov/75m2-3-vaer-id-5563023" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/a12569a6fd572e289bc057979d4d24d2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#21 · 31.2 km</small><h3>Lunderskov · 9.595 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5563023" data-rent="9595" data-dog="yes" data-distance="31.2">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/lunderskov/75m2-3-vaer-id-5563023" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/a12569a6fd572e289bc057979d4d24d2?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#21 · 31.2 km</small><h3>Lunderskov · 9.595 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5563023">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9895" data-dog="yes" data-distance="35.3" href="https://www.boligportal.dk/r%C3%A6kkehuse/kolding/86m2-3-vaer-id-5636828" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/9fce15d56227f778ef2e22dac92b6c24?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#22 · 35.3 km</small><h3>Kolding Nr. Bjert · 9.895 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5636828" data-rent="9895" data-dog="yes" data-distance="35.3">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/kolding/86m2-3-vaer-id-5636828" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/9fce15d56227f778ef2e22dac92b6c24?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#22 · 35.3 km</small><h3>Kolding Nr. Bjert · 9.895 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5636828">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="10395" data-dog="yes" data-distance="37.4" href="https://www.boligportal.dk/huse/kolding/91m2-4-vaer-id-5634463" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/0f3b943d3769b910097d7e88beb4defb?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#23 · 37.4 km</small><h3>Kolding · 10.395 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5634463" data-rent="10395" data-dog="yes" data-distance="37.4">
+                            <a class="tileLink" href="https://www.boligportal.dk/huse/kolding/91m2-4-vaer-id-5634463" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/0f3b943d3769b910097d7e88beb4defb?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#23 · 37.4 km</small><h3>Kolding · 10.395 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5634463">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="9300" data-dog="yes" data-distance="38.6" href="https://www.boligportal.dk/r%C3%A6kkehuse/kolding/84m2-3-vaer-id-5628518" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/7569c730cfc82e21a8726bd1222c6c67?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#24 · 38.6 km</small><h3>Kolding · 9.300 kr</h3><p>Hund OK</p></div>
-            </a>
+                        <article class="tile dog" data-key="5628518" data-rent="9300" data-dog="yes" data-distance="38.6">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/kolding/84m2-3-vaer-id-5628518" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/7569c730cfc82e21a8726bd1222c6c67?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#24 · 38.6 km</small><h3>Kolding · 9.300 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5628518">Gem</button>
+                        </article>
             
-            <a class="tile dog" data-rent="7738" data-dog="yes" data-distance="39.9" href="https://www.boligportal.dk/r%C3%A6kkehuse/vamdrup/86m2-2-vaer-id-5411408" target="_blank" rel="noopener noreferrer">
-              <img src="https://image-lambda.boligportal.dk/985e5d92a46286eb58e14c92ad0af4ea?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
-                            <div class="new">Ny tilfojelse!</div>
-              <div class="txt"><small>#25 · 39.9 km</small><h3>Vamdrup/ï¿½dis · 7.738 kr</h3><p>Hund OK</p></div>
-            </a>
-            </div></body></html>
+                        <article class="tile dog" data-key="5411408" data-rent="7738" data-dog="yes" data-distance="39.9">
+                            <a class="tileLink" href="https://www.boligportal.dk/r%C3%A6kkehuse/vamdrup/86m2-2-vaer-id-5411408" target="_blank" rel="noopener noreferrer">
+                                <img src="https://image-lambda.boligportal.dk/985e5d92a46286eb58e14c92ad0af4ea?w=600&h=600&fit=crop&auto=compress%2Cenhance%2Cformat&crop=focalpoint" alt="" loading="lazy" /><div class="veil"></div>
+                                <div class="new">Ny tilfojelse!</div>
+                                <div class="txt"><small>#25 · 39.9 km</small><h3>Vamdrup/ï¿½dis · 7.738 kr</h3><p>Hund OK</p></div>
+                            </a>
+                            <button class="miniFavBtn" type="button" data-key="5411408">Gem</button>
+                        </article>
+            </div>
+        <script>
+        const grid = document.getElementById('grid');
+        const shortlistToggle = document.getElementById('shortlistToggle');
+        const shortlistShare = document.getElementById('shortlistShare');
+        const shortlistClear = document.getElementById('shortlistClear');
+        const shortlistCount = document.getElementById('shortlistCount');
+        const shortlistStorageKey = 'bolig-shortlist-v1';
+        let showOnlyShortlist = false;
+        let shortlist = new Set();
+
+        try {
+            const raw = localStorage.getItem(shortlistStorageKey);
+            if (raw) shortlist = new Set(JSON.parse(raw));
+        } catch (_) {
+            shortlist = new Set();
+        }
+
+        const sharedShortlist = new URLSearchParams(window.location.search).get('shortlist');
+        if (sharedShortlist) {
+            const fromLink = new Set();
+            sharedShortlist.split(',').forEach((id) => {
+                const clean = decodeURIComponent(id || '').trim();
+                if (clean) fromLink.add(clean);
+            });
+            if (fromLink.size) {
+                shortlist = fromLink;
+                showOnlyShortlist = true;
+                persistShortlist();
+            }
+        }
+
+        function persistShortlist() {
+            localStorage.setItem(shortlistStorageKey, JSON.stringify(Array.from(shortlist)));
+        }
+
+        function refreshUI() {
+            Array.from(grid.querySelectorAll('.tile')).forEach((tile) => {
+                const key = tile.dataset.key;
+                const isOn = shortlist.has(key);
+                tile.classList.toggle('selected', isOn);
+                tile.style.display = !showOnlyShortlist || isOn ? 'block' : 'none';
+                const btn = tile.querySelector('.miniFavBtn');
+                if (btn) {
+                    btn.classList.toggle('active', isOn);
+                    btn.textContent = isOn ? 'Fjern' : 'Gem';
+                }
+            });
+            shortlistCount.textContent = `${shortlist.size} valgte`;
+            shortlistToggle.textContent = showOnlyShortlist ? 'Vis alle' : 'Vis kun valgte';
+        }
+
+        grid.addEventListener('click', (evt) => {
+            const btn = evt.target.closest('.miniFavBtn');
+            if (!btn) return;
+            const key = btn.dataset.key;
+            if (!key) return;
+            if (shortlist.has(key)) shortlist.delete(key); else shortlist.add(key);
+            persistShortlist();
+            refreshUI();
+        });
+
+        shortlistToggle.addEventListener('click', () => {
+            showOnlyShortlist = !showOnlyShortlist;
+            refreshUI();
+        });
+
+        shortlistShare.addEventListener('click', async () => {
+            const selected = encodeURIComponent(Array.from(shortlist).join(','));
+            const url = `${window.location.origin}${window.location.pathname}?shortlist=${selected}`;
+            try {
+                await navigator.clipboard.writeText(url);
+                shortlistShare.textContent = 'Link kopieret';
+                setTimeout(() => shortlistShare.textContent = 'Del valgte', 1400);
+            } catch (_) {
+                window.prompt('Kopiér linket:', url);
+            }
+        });
+
+        shortlistClear.addEventListener('click', () => {
+            shortlist.clear();
+            showOnlyShortlist = false;
+            persistShortlist();
+            refreshUI();
+        });
+
+        refreshUI();
+        </script></body></html>

@@ -64,7 +64,7 @@
 <body>
   <main class="wrap">
     <h1>Boligoversigt med Billund i fokus</h1>
-    <p class="sub">Samlet visning med modern + light mode og indbygget kort. Opdateret: 06-06-2026 14:25</p>
+    <p class="sub">Samlet visning med modern + light mode og indbygget kort. Opdateret: 06-06-2026 14:31</p>
 
     <section class="tabs">
       <button class="tabBtn active" data-view="cards">Kortliste</button>
@@ -73,7 +73,7 @@
             <button id="filterToggle" class="filterToggle">Vis filtre og sortering</button>
             <button id="shortlistToggle">Vis kun valgte</button>
             <button id="shortlistShare">Del valgte</button>
-                <button id="shortlistClear">Slet valgte</button>
+                <button id="shortlistClear">Slet alle valgte</button>
             <span id="shortlistCount" class="shortlistMeta">0 valgte</span>
     </section>
 
@@ -497,7 +497,7 @@ function refreshShortlistUI() {
         const btn = card.querySelector('.favBtn');
         if (btn) {
             btn.classList.toggle('active', isOn);
-            btn.textContent = isOn ? 'Valgt' : 'Gem';
+            btn.textContent = isOn ? 'Fjern' : 'Gem';
         }
     });
     shortlistCount.textContent = `${shortlist.size} valgte`;
