@@ -393,6 +393,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
             <button id="filterToggle" class="filterToggle">Vis filtre og sortering</button>
             <button id="shortlistToggle">Vis kun valgte</button>
             <button id="shortlistShare">Del valgte</button>
+                <button id="shortlistClear">Slet valgte</button>
             <span id="shortlistCount" class="shortlistMeta">0 valgte</span>
     </section>
 
@@ -427,6 +428,7 @@ const filtersBar = document.getElementById('filtersBar');
 const mapFrame = document.getElementById('mapFrame');
 const shortlistToggle = document.getElementById('shortlistToggle');
 const shortlistShare = document.getElementById('shortlistShare');
+const shortlistClear = document.getElementById('shortlistClear');
 const shortlistCount = document.getElementById('shortlistCount');
 
 const shortlistStorageKey = 'bolig-shortlist-v1';
@@ -549,6 +551,13 @@ shortlistShare.addEventListener('click', async () => {{
     }} catch (_) {{
         window.prompt('Kopiér linket:', url);
     }}
+}});
+shortlistClear.addEventListener('click', () => {{
+    shortlist.clear();
+    showOnlyShortlist = false;
+    persistShortlist();
+    refreshShortlistUI();
+    applyFilters();
 }});
 filterToggle.addEventListener('click', () => {{
     filtersBar.classList.toggle('collapsed');
