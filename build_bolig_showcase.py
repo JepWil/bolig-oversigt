@@ -442,10 +442,16 @@ try {{
 
 const sharedShortlist = new URLSearchParams(window.location.search).get('shortlist');
 if (sharedShortlist) {{
+    const fromLink = new Set();
     sharedShortlist.split(',').forEach((id) => {{
         const clean = decodeURIComponent(id || '').trim();
-        if (clean) shortlist.add(clean);
+        if (clean) fromLink.add(clean);
     }});
+    if (fromLink.size) {{
+        shortlist = fromLink;
+        showOnlyShortlist = true;
+        persistShortlist();
+    }}
 }}
 
 function persistShortlist() {{

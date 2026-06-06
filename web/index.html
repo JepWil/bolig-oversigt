@@ -64,7 +64,7 @@
 <body>
   <main class="wrap">
     <h1>Boligoversigt med Billund i fokus</h1>
-    <p class="sub">Samlet visning med modern + light mode og indbygget kort. Opdateret: 06-06-2026 14:19</p>
+    <p class="sub">Samlet visning med modern + light mode og indbygget kort. Opdateret: 06-06-2026 14:23</p>
 
     <section class="tabs">
       <button class="tabBtn active" data-view="cards">Kortliste</button>
@@ -471,10 +471,16 @@ try {
 
 const sharedShortlist = new URLSearchParams(window.location.search).get('shortlist');
 if (sharedShortlist) {
+    const fromLink = new Set();
     sharedShortlist.split(',').forEach((id) => {
         const clean = decodeURIComponent(id || '').trim();
-        if (clean) shortlist.add(clean);
+        if (clean) fromLink.add(clean);
     });
+    if (fromLink.size) {
+        shortlist = fromLink;
+        showOnlyShortlist = true;
+        persistShortlist();
+    }
 }
 
 function persistShortlist() {
