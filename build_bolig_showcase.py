@@ -289,28 +289,29 @@ def write_csv(rows: list[dict[str, Any]], path: Path) -> None:
 
 
 def card_markup(row: dict[str, Any]) -> str:
-        image = row.get("image_url") or "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&w=1200&q=80"
-        lat = to_float(row.get("lat"))
-        lon = to_float(row.get("lon"))
-        map_thumb_html = static_map_preview_markup(lat, lon, row.get("city_from_page") or row.get("By") or "")
-        new_badge = '<div class="newBadge">Ny tilfojelse!</div>' if row.get("is_new") else ""
+    image = row.get("image_url") or "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?auto=format&fit=crop&w=1200&q=80"
+    lat = to_float(row.get("lat"))
+    lon = to_float(row.get("lon"))
+    map_thumb_html = static_map_preview_markup(lat, lon, row.get("city_from_page") or row.get("By") or "")
+    new_badge = '<div class="newBadge">Ny tilfojelse!</div>' if row.get("is_new") else ""
+    card_key = safe_text(row.get("listing_id") or listing_key(row))
 
-        title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
-        desc = row.get("card_description") or row.get("Kommentar") or ""
-        return f"""
-        <article class=\"card{' dog-friendly' if row.get('dog_friendly') else ''}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-rooms=\"{to_int(row.get('rooms_from_page')) or to_int(row.get('Vær.')) or 0}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\" data-score=\"{to_float(row.get('billund_priority_score_0_100')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\">
-            <div class=\"hero\" style=\"background-image:url('{safe_text(image)}')\"><div class=\"overlay\"></div>{new_badge}<div class=\"rank\">#{row.get('billund_rank')}</div><div class=\"distance\">{format_float(row.get('distance_to_billund_km'), ' km')} til Billund</div>{map_thumb_html}</div>
-            <div class=\"content\">
-                <h3>{safe_text(title)}</h3>
-                <p class=\"meta\">{safe_text(row.get('address'))}, {safe_text(row.get('postal_code'))} {safe_text(row.get('city_from_page') or row.get('By'))}</p>
-                <p class=\"desc\">{safe_text(desc)}</p>
-                <div class=\"chips\"><span>{safe_text(row.get('Type'))}</span><span>{safe_text(row.get('area_from_page_m2') or row.get('m²'))} m²</span><span>{safe_text(row.get('rooms_from_page') or row.get('Vær.'))} vær.</span><span>{'Hund OK' if row.get('dog_friendly') else 'Ingen hund'}</span></div>
-                <div class=\"stats\"><div><small>Mdl. leje</small><strong>{format_currency(row.get('Mdl. leje'))}</strong></div><div><small>Indflytning</small><strong>{format_currency(row.get('move_in_price_dkk'))}</strong></div><div><small>Kr/m²</small><strong>{format_float(row.get('rent_per_m2_dkk'))}</strong></div></div>
-                <div class=\"score\"><div><small>Distance-score</small><strong>{format_float(row.get('distance_score_0_100'))}</strong></div><div><small>Billund-prio</small><strong>{format_float(row.get('billund_priority_score_0_100'))}</strong></div><div><small>Samlet</small><strong>{safe_text(row.get('Samlet vurdering'))}</strong></div></div>
-                <div class=\"actions\"><a href=\"{safe_text(row.get('canonical_url') or row.get('URL') or '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">Se annonce</a></div>
-            </div>
-        </article>
-        """
+    title = row.get("card_title") or f"{row.get('Type', 'Bolig')} i {row.get('By', '')}"
+    desc = row.get("card_description") or row.get("Kommentar") or ""
+    return f"""
+    <article class=\"card{' dog-friendly' if row.get('dog_friendly') else ''}\" data-key=\"{card_key}\" data-rent=\"{to_int(row.get('Mdl. leje')) or 0}\" data-rooms=\"{to_int(row.get('rooms_from_page')) or to_int(row.get('Vær.')) or 0}\" data-distance=\"{to_float(row.get('distance_to_billund_km')) or 9999}\" data-score=\"{to_float(row.get('billund_priority_score_0_100')) or 0}\" data-dog=\"{'yes' if row.get('dog_friendly') else 'no'}\">
+        <div class=\"hero\" style=\"background-image:url('{safe_text(image)}')\"><div class=\"overlay\"></div>{new_badge}<div class=\"rank\">#{row.get('billund_rank')}</div><div class=\"distance\">{format_float(row.get('distance_to_billund_km'), ' km')} til Billund</div>{map_thumb_html}</div>
+        <div class=\"content\">
+            <h3>{safe_text(title)}</h3>
+            <p class=\"meta\">{safe_text(row.get('address'))}, {safe_text(row.get('postal_code'))} {safe_text(row.get('city_from_page') or row.get('By'))}</p>
+            <p class=\"desc\">{safe_text(desc)}</p>
+            <div class=\"chips\"><span>{safe_text(row.get('Type'))}</span><span>{safe_text(row.get('area_from_page_m2') or row.get('m²'))} m²</span><span>{safe_text(row.get('rooms_from_page') or row.get('Vær.'))} vær.</span><span>{'Hund OK' if row.get('dog_friendly') else 'Ingen hund'}</span></div>
+            <div class=\"stats\"><div><small>Mdl. leje</small><strong>{format_currency(row.get('Mdl. leje'))}</strong></div><div><small>Indflytning</small><strong>{format_currency(row.get('move_in_price_dkk'))}</strong></div><div><small>Kr/m²</small><strong>{format_float(row.get('rent_per_m2_dkk'))}</strong></div></div>
+            <div class=\"score\"><div><small>Distance-score</small><strong>{format_float(row.get('distance_score_0_100'))}</strong></div><div><small>Billund-prio</small><strong>{format_float(row.get('billund_priority_score_0_100'))}</strong></div><div><small>Samlet</small><strong>{safe_text(row.get('Samlet vurdering'))}</strong></div></div>
+            <div class=\"actions\"><a href=\"{safe_text(row.get('canonical_url') or row.get('URL') or '#')}\" target=\"_blank\" rel=\"noopener noreferrer\">Se annonce</a><button class=\"favBtn\" type=\"button\" data-key=\"{card_key}\">Gem</button></div>
+        </div>
+    </article>
+    """
 
 
 def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
@@ -336,6 +337,7 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .tabs {{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }}
     .tabs button {{ border:1px solid #cfd9d2; background:#fff; border-radius:999px; padding:8px 12px; font:inherit; cursor:pointer; }}
     .tabs button.active {{ background:#1f5e50; color:#fff; border-color:#1f5e50; }}
+    .shortlistMeta {{ display:inline-flex; align-items:center; font-size:12px; color:#36564d; padding:0 2px; }}
     .filterToggle {{ border:1px solid #b9cbc3; background:#f9fffc; border-radius:999px; padding:8px 12px; font:inherit; cursor:pointer; color:#1e4c42; }}
     .toolbar {{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:12px; }}
     .toolbar.collapsed {{ display:none; }}
@@ -366,7 +368,11 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
     .stats div,.score div {{ border:1px solid var(--line); border-radius:10px; padding:7px 8px; background:#fbfefb; }}
     .stats small,.score small {{ display:block; margin:0 0 3px; color:#5c6b63; line-height:1.25; }}
     .stats strong,.score strong {{ display:block; line-height:1.3; letter-spacing:.01em; }}
+    .card.shortlisted {{ border-color:#e3be46; box-shadow:0 10px 26px rgba(123,91,22,.24); }}
+    .actions {{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }}
     .actions a {{ display:inline-block; text-decoration:none; background:linear-gradient(135deg,var(--accent),#0f9271); color:#fff; border-radius:10px; padding:7px 10px; font-weight:700; font-size:13px; }}
+    .favBtn {{ border:1px solid #cfb262; background:#fff7dc; color:#5b4610; border-radius:10px; padding:7px 10px; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }}
+    .favBtn.active {{ background:#f3c94a; border-color:#d3a92f; color:#2b2207; }}
     body.light-mode .desc, body.light-mode .stats, body.light-mode .score {{ display:none; }}
     body.light-mode .hero {{ height:190px; }}
     body.light-mode .content h3 {{ font-size:17px; }}
@@ -384,7 +390,10 @@ def create_modern_html(rows: list[dict[str, Any]], path: Path) -> None:
       <button class=\"tabBtn active\" data-view=\"cards\">Kortliste</button>
       <button class=\"tabBtn\" data-view=\"map\">Interaktivt Kort</button>
       <button id=\"modeToggle\">Skift til Light</button>
-            <button id=\"filterToggle\" class=\"filterToggle\">Vis filtre og sortering</button>
+            <button id="filterToggle" class="filterToggle">Vis filtre og sortering</button>
+            <button id="shortlistToggle">Vis kun valgte</button>
+            <button id="shortlistShare">Del valgte</button>
+            <span id="shortlistCount" class="shortlistMeta">0 valgte</span>
     </section>
 
         <section class=\"toolbar collapsed\" id=\"filtersBar\">
@@ -416,6 +425,47 @@ const cardsPanel = document.getElementById('cardsPanel');
 const mapPanel = document.getElementById('mapPanel');
 const filtersBar = document.getElementById('filtersBar');
 const mapFrame = document.getElementById('mapFrame');
+const shortlistToggle = document.getElementById('shortlistToggle');
+const shortlistShare = document.getElementById('shortlistShare');
+const shortlistCount = document.getElementById('shortlistCount');
+
+const shortlistStorageKey = 'bolig-shortlist-v1';
+let showOnlyShortlist = false;
+let shortlist = new Set();
+
+try {{
+    const raw = localStorage.getItem(shortlistStorageKey);
+    if (raw) shortlist = new Set(JSON.parse(raw));
+}} catch (_) {{
+    shortlist = new Set();
+}}
+
+const sharedShortlist = new URLSearchParams(window.location.search).get('shortlist');
+if (sharedShortlist) {{
+    sharedShortlist.split(',').forEach((id) => {{
+        const clean = decodeURIComponent(id || '').trim();
+        if (clean) shortlist.add(clean);
+    }});
+}}
+
+function persistShortlist() {{
+    localStorage.setItem(shortlistStorageKey, JSON.stringify(Array.from(shortlist)));
+}}
+
+function refreshShortlistUI() {{
+    Array.from(grid.querySelectorAll('.card')).forEach((card) => {{
+        const key = card.dataset.key;
+        const isOn = shortlist.has(key);
+        card.classList.toggle('shortlisted', isOn);
+        const btn = card.querySelector('.favBtn');
+        if (btn) {{
+            btn.classList.toggle('active', isOn);
+            btn.textContent = isOn ? 'Valgt' : 'Gem';
+        }}
+    }});
+    shortlistCount.textContent = `${{shortlist.size}} valgte`;
+    shortlistToggle.textContent = showOnlyShortlist ? 'Vis alle' : 'Vis kun valgte';
+}}
 
 const hosted = window.location.protocol === 'http:' || window.location.protocol === 'https:';
 mapFrame.src = hosted ? 'pendling.html' : 'Bolig_kort_pendling.html';
@@ -441,7 +491,8 @@ function applyFilters() {{
     const rent = Number(card.dataset.rent || 0);
     const rooms = Number(card.dataset.rooms || 0);
     const hasDog = card.dataset.dog === 'yes';
-    const visible = rent <= max && rooms >= minRooms && (!onlyDog || hasDog);
+        const isShortlisted = shortlist.has(card.dataset.key);
+        const visible = rent <= max && rooms >= minRooms && (!onlyDog || hasDog) && (!showOnlyShortlist || isShortlisted);
     card.style.display = visible ? 'block' : 'none';
     card.classList.toggle('dog-friendly', hasDog && highlightDog.checked);
   }});
@@ -467,6 +518,32 @@ function activateView(view) {{
 tabButtons.forEach((btn) => btn.addEventListener('click', () => activateView(btn.dataset.view)));
 [rentMax, roomsMin, dogFilter, highlightDog].forEach((el) => el.addEventListener('input', applyFilters));
 sortBy.addEventListener('change', applySort);
+grid.addEventListener('click', (evt) => {{
+    const btn = evt.target.closest('.favBtn');
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (!key) return;
+    if (shortlist.has(key)) shortlist.delete(key); else shortlist.add(key);
+    persistShortlist();
+    refreshShortlistUI();
+    applyFilters();
+}});
+shortlistToggle.addEventListener('click', () => {{
+    showOnlyShortlist = !showOnlyShortlist;
+    refreshShortlistUI();
+    applyFilters();
+}});
+shortlistShare.addEventListener('click', async () => {{
+    const selected = encodeURIComponent(Array.from(shortlist).join(','));
+    const url = `${{window.location.origin}}${{window.location.pathname}}?shortlist=${{selected}}`;
+    try {{
+        await navigator.clipboard.writeText(url);
+        shortlistShare.textContent = 'Link kopieret';
+        setTimeout(() => shortlistShare.textContent = 'Del valgte', 1400);
+    }} catch (_) {{
+        window.prompt('Kopiér linket:', url);
+    }}
+}});
 filterToggle.addEventListener('click', () => {{
     filtersBar.classList.toggle('collapsed');
     const collapsed = filtersBar.classList.contains('collapsed');
@@ -477,6 +554,7 @@ modeToggle.addEventListener('click', () => {{
   document.body.classList.toggle('light-mode');
   modeToggle.textContent = document.body.classList.contains('light-mode') ? 'Skift til Modern' : 'Skift til Light';
 }});
+refreshShortlistUI();
 applyFilters();
 </script>
 </body>
